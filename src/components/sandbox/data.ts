@@ -1,11 +1,11 @@
 export const normalReactCompCode = `
 import React, { useState } from 'react';
 import lodash from 'lodash';
-import * as antd from 'antd';
+import { Button } from 'antd';
 
 export default (props) => {
   const [count, setCount] = useState(0);
-  console.log('jinlaile1111111', antd);
+  console.log('jinlaile1111111', Button);
 
   return (
     <>
@@ -14,6 +14,7 @@ export default (props) => {
       <button onClick={() => {
         setCount(count + 1);
       }}>点击Add: {count}</button>
+      <Button>进来了</Button>
     </>
   );
 }

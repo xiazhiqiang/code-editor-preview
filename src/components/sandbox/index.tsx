@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { transform as babelTransform } from "@babel/standalone";
-import { transform as _transform } from "sucrase";
+// import { transform as _transform } from "sucrase";
 
 // 依赖库
+import dayjs from "dayjs";
 import lodash from "lodash";
 import * as antd from "antd";
 import { normalReactCompCode } from "./data";
@@ -13,14 +14,15 @@ const moduleCdn = "https://unpkg.com"; // "https://cdn.jsdelivr.net/npm"
 let moduleDeps = {
   react: React,
   "react-dom": ReactDOM,
+  // dayjs,
   // lodash,
   // antd,
 };
 
-function transformCode(code, opts = {}) {
-  opts = Object.assign({}, { transforms: ["jsx", "imports"] }, opts);
-  return _transform(code, opts).code;
-}
+// function transformCode(code, opts = {}) {
+//   opts = Object.assign({}, { transforms: ["jsx", "imports"] }, opts);
+//   return _transform(code, opts).code;
+// }
 
 async function runCode(code) {
   // 定义参数
@@ -53,8 +55,9 @@ async function loadMod(nameAndVersion) {
     ).json();
 
     // 请求模块源码
-    const sourceType = pkgJSON.module ? "es" : "commonjs";
-    const entryFile = pkgJSON.browser || pkgJSON.module || pkgJSON.main || "";
+    // const sourceType = pkgJSON.module ? "es" : "commonjs";
+    const entryFile =
+      pkgJSON.unpkg || pkgJSON.browser || pkgJSON.module || pkgJSON.main || "";
     let source = await (
       await fetch(`${moduleCdn}/${nameAndVersion}/${entryFile}`)
     ).text();
@@ -86,10 +89,10 @@ export default () => {
 
   useEffect(() => {
     (async () => {
-      await loadMod("antd");
       await loadMod("lodash");
-      // await loadMod("dayjs");
-      await loadMod("@alifd/next");
+      await loadMod("dayjs");
+      await loadMod("antd");
+      // await loadMod("@alifd/next");
     })();
   }, []);
 
@@ -109,33 +112,11 @@ export default () => {
           console.log("moduleDeps", moduleDeps);
 
           // 在线执行模块
-          let e = {};
-          let m = { exports: e };
-          let r = function (name) {
-            // let ret;
-            // if (moduleDeps[name]) {
-            //   ret = moduleDeps[name].__esModule
-            //     ? { default: moduleDeps[name] }
-            //     : moduleDeps[name];
-            // }
+          const e = await runCode(esCode);
+          console.log("ret e", e);
 
-            // console.log("ret", ret);
-
-            return moduleDeps[name];
-          };
-          try {
-            new Function("exports", "module", "require", esCode)(e, m, r);
-          } catch (err) {}
-
-          console.log("================================", e, m);
-
+          // 渲染到节点上
           ReactDOM.render(<e.default />, viewRef.current);
-
-          // let previewEsm = await runCode(esCode);
-          // console.log("ret", previewEsm);
-
-          // // 渲染到节点上
-          // ReactDOM.render(<previewEsm.default />, viewRef.current);
         }}
       >
         运行
