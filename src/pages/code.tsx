@@ -3,11 +3,6 @@ import React from "react";
 import Editor from "../components/editor";
 import Sandbox from "@/components/sandbox";
 import "./code.less";
-import * as cmap3d from "@ali/cmap3d";
-
-const {
-  reactCmap3d: { Holomap },
-} = cmap3d;
 
 export default (props: any) => {
   return (
