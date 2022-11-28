@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import loader from "@monaco-editor/loader";
 // import * as monaco from "monaco-editor";
 import storage from "store2";
+import { message } from "antd";
+import { cdn } from "@/constants/index";
 
 loader.config({
   paths: {
-    vs: "https://unpkg.com/monaco-editor@0.34.1/min/vs",
+    vs: `${cdn}/monaco-editor@0.34.1/min/vs`,
   },
   "vs/nls": {
     availableLanguages: {
@@ -21,6 +23,7 @@ export default (props: any) => {
     width = "100%",
     height = "100%",
     language = "javascript",
+    onCodeSave = () => {},
   } = props;
 
   const [editor, setEditor] = useState<any>(null);
@@ -50,6 +53,8 @@ export default (props: any) => {
           // 保存代码到localStorage
           const v = editor.getValue();
           storage.local.set("editor.code", v, true);
+          message.success("保存成功！");
+          onCodeSave(v);
         });
 
         setEditor(editor);
@@ -62,6 +67,7 @@ export default (props: any) => {
   useEffect(() => {
     if (editor) {
       editor.setValue(value);
+      onCodeSave(value);
     }
   }, [value, editor]);
 

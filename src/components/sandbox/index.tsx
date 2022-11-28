@@ -2,15 +2,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { transform as babelTransform } from "@babel/standalone";
-// import { transform as _transform } from "sucrase";
+import { parser, walk } from "./ast";
 
 // 依赖库
 import dayjs from "dayjs";
 import lodash from "lodash";
 import * as antd from "antd";
-import { normalReactCompCode } from "./data";
 
-const moduleCdn = "https://unpkg.com"; // "https://cdn.jsdelivr.net/npm"
+import { normalReactCompCode } from "./data";
+import { cdn } from "@/constants";
+
 let moduleDeps = {
   react: React,
   "react-dom": ReactDOM,
@@ -18,11 +19,6 @@ let moduleDeps = {
   // lodash,
   // antd,
 };
-
-// function transformCode(code, opts = {}) {
-//   opts = Object.assign({}, { transforms: ["jsx", "imports"] }, opts);
-//   return _transform(code, opts).code;
-// }
 
 async function runCode(code) {
   // 定义参数
@@ -51,7 +47,7 @@ async function loadMod(nameAndVersion) {
   try {
     // 请求模块信息
     const pkgJSON = await (
-      await fetch(`${moduleCdn}/${nameAndVersion}/package.json`)
+      await fetch(`${cdn}/${nameAndVersion}/package.json`)
     ).json();
 
     // 请求模块源码
@@ -59,7 +55,7 @@ async function loadMod(nameAndVersion) {
     const entryFile =
       pkgJSON.unpkg || pkgJSON.browser || pkgJSON.module || pkgJSON.main || "";
     let source = await (
-      await fetch(`${moduleCdn}/${nameAndVersion}/${entryFile}`)
+      await fetch(`${cdn}/${nameAndVersion}/${entryFile}`)
     ).text();
 
     // es module 及 react 解析
@@ -83,18 +79,63 @@ async function loadMod(nameAndVersion) {
   return moduleDeps[nameAndVersion];
 }
 
-export default () => {
+interface IProps {
+  code?: string;
+}
+
+export default (props: IProps) => {
+  const { code = "" } = props;
   const viewRef = useRef<any>(null);
-  const [code, setCode] = useState(normalReactCompCode);
+  // const [code, setCode] = useState(normalReactCompCode);
+
+  useEffect(() => {
+    // (async () => {
+    //   await loadMod("lodash");
+    //   await loadMod("dayjs");
+    //   await loadMod("antd");
+    //   // await loadMod("@alifd/next");
+    // })();
+  }, []);
 
   useEffect(() => {
     (async () => {
-      await loadMod("lodash");
-      await loadMod("dayjs");
-      await loadMod("antd");
-      // await loadMod("@alifd/next");
+      if (!code) {
+        return;
+      }
+
+      // ast 解析源码
+      const ast = parser.parse(normalReactCompCode, {
+        sourceType: "module",
+        ecmaVersion: "2020",
+      });
+
+      // 提取源码中依赖的模块
+      const codeDeps = [];
+      walk.simple(ast, {
+        ImportDeclaration(node) {
+          if (node && node.source && node.source.value) {
+            codeDeps.push(node.source.value);
+          }
+        },
+      });
+
+      // TODO 优先加载依赖模块
+      loadDeps(codeDeps);
+
+      // 源码解析
+      let esCode = babelTransform(normalReactCompCode, {
+        presets: ["env", "es2015", "react"],
+      }).code;
+
+      console.log("esCode", esCode, moduleDeps);
+
+      // 在线执行模块
+      const e = await runCode(esCode);
+      console.log("ret e", e);
     })();
-  }, []);
+  }, [code]);
+
+  const loadDeps = (deps = []) => {};
 
   return (
     <div className="container" style={{ display: "flex" }}>
