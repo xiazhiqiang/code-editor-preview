@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import loader from "@monaco-editor/loader";
-// import * as monaco from "monaco-editor";
 import storage from "store2";
 import { message } from "antd";
+import styles from "./index.module.less";
 import { cdn } from "@/constants/index";
 
 loader.config({
@@ -14,7 +14,6 @@ loader.config({
       "*": "zh-cn", // on the editor, press right click to see the chinese words
     },
   },
-  // monaco,
 });
 
 export default (props: any) => {
@@ -72,9 +71,12 @@ export default (props: any) => {
   }, [value, editor]);
 
   return (
-    <div
-      style={{ width, height, ...editorStyles }}
-      ref={editorContainerRef}
-    ></div>
+    <div className={styles["editor-container"]} style={{ width, height }}>
+      {!editor ? <div className={styles.loading}>Loading...</div> : null}
+      <div
+        style={{ width, height, ...editorStyles }}
+        ref={editorContainerRef}
+      />
+    </div>
   );
 };

@@ -1,6 +1,9 @@
+import { babelTransform, runCode, moduleDeps } from "../components/sandbox/mod";
+
 export const normalReactCompCode = `
 import React, { useState } from 'react';
 import lodash from 'lodash';
+import dayjs from 'dayjs';
 import { Button } from 'antd';
 
 export default (props) => {
@@ -20,5 +23,15 @@ export default (props) => {
 }
 `;
 
-// <Button>Hi,button{JSON.stringify(lodash.get(window, 'location.href'))}</Button>
-//       <><Select /></>
+export function testCode() {
+  // React&ES6 代码解析
+  let esCode = babelTransform(normalReactCompCode, {
+    presets: ["env", "es2015", "react"],
+  }).code;
+  console.log("esCode", esCode);
+  console.log("moduleDeps", moduleDeps);
+
+  // 在线执行模块
+  const e = runCode(esCode);
+  console.log("ret e", e);
+}
