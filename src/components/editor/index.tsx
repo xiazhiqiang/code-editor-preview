@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import loader from "@monaco-editor/loader";
-import storage from "store2";
 import { message } from "antd";
 import styles from "./index.module.less";
 import { cdn } from "@/constants/index";
@@ -18,18 +17,16 @@ loader.config({
 
 export default (props: any) => {
   const {
+    value = "",
     editorStyles = {},
     width = "100%",
     height = "100%",
     language = "javascript",
-    onCodeSave = () => {},
+    onValueSave = () => {},
   } = props;
 
   const [editor, setEditor] = useState<any>(null);
   const editorContainerRef = useRef<any>(null);
-  const value = useMemo(() => {
-    return props.value ? props.value : storage.local.get("editor.code") || "";
-  }, [props.value]);
 
   useEffect(() => {
     loader
@@ -51,9 +48,8 @@ export default (props: any) => {
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
           // 保存代码到localStorage
           const v = editor.getValue();
-          storage.local.set("editor.code", v, true);
           message.success("保存成功！");
-          onCodeSave(v);
+          onValueSave(v);
         });
 
         setEditor(editor);
@@ -66,7 +62,6 @@ export default (props: any) => {
   useEffect(() => {
     if (editor) {
       editor.setValue(value);
-      onCodeSave(value);
     }
   }, [value, editor]);
 
