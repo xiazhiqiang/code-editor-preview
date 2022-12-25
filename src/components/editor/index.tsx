@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import loader from "@monaco-editor/loader";
-import { message } from "antd";
+import { message, Spin } from "antd";
 import styles from "./index.module.less";
 import { cdn } from "@/constants/index";
 
@@ -48,7 +48,14 @@ export default (props: any) => {
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
           // 保存代码到localStorage
           const v = editor.getValue();
-          message.success("保存成功！");
+          message.destroy("editorSave");
+          message.success({
+            content: "代码已保存本地！",
+            key: "editorSave",
+            style: {
+              marginTop: "30vh",
+            },
+          });
           onValueSave(v);
         });
 
@@ -66,8 +73,13 @@ export default (props: any) => {
   }, [value, editor]);
 
   return (
-    <div className={styles["editor-container"]} style={{ width, height }}>
-      {!editor ? <div className={styles.loading}>Loading...</div> : null}
+    <div className={styles["editor-container"]}>
+      <Spin
+        className={styles.loading}
+        spinning={!editor}
+        tip="Loading..."
+        size="large"
+      />
       <div
         style={{ width, height, ...editorStyles }}
         ref={editorContainerRef}

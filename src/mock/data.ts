@@ -1,7 +1,6 @@
 import { babelTransform, runCode, moduleDeps } from "../components/sandbox/mod";
 
-export const normalReactCompCode = `
-import React, { useState } from 'react';
+export const normalReactCompCode = `import React, { useState } from 'react';
 import lodash from 'lodash';
 import dayjs from 'dayjs';
 import { Button } from 'antd';

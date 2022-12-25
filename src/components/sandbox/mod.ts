@@ -38,7 +38,7 @@ function runCode(code: string) {
 
 async function loadMod(nameAndVersion: string) {
   if (moduleDeps[nameAndVersion]) {
-    console.log("mod cached: ", moduleDeps[nameAndVersion]);
+    // console.log("mod cached: ", moduleDeps[nameAndVersion]);
     return moduleDeps[nameAndVersion];
   }
 
@@ -71,7 +71,7 @@ async function loadMod(nameAndVersion: string) {
     console.log("load mod error: ", err);
   }
 
-  console.log("mod loaded: ", moduleDeps[nameAndVersion]);
+  // console.log("mod loaded: ", moduleDeps[nameAndVersion]);
   return moduleDeps[nameAndVersion];
 }
 
