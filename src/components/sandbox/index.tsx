@@ -79,8 +79,8 @@ export default (props: IProps) => {
         const e: any = runCode(esCode);
         console.log("ret e", e);
 
-        setError(null);
         setComp(e && e.default ? <e.default /> : null);
+        setError(null);
       } catch (err) {
         // console.log("code error", err);
         setError(err);

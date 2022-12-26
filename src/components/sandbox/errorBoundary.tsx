@@ -18,8 +18,8 @@ export default class ErrorBoundary extends Component<any, any> {
   }
 
   componentDidCatch(error: any, errorInfo: any) {
-    // 可以将错误日志上报给服务器
-    console.log("error did catch", error, errorInfo);
+    // // 可以将错误日志上报给服务器
+    // console.log("error did catch", error, errorInfo);
   }
 
   onError = (error: any) => {
