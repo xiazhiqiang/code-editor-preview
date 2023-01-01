@@ -1,4 +1,5 @@
-import { babelTransform, runCode, moduleDeps } from "../components/sandbox/mod";
+import { transform as babelTransform } from "@babel/standalone";
+import { runCode, moduleDeps } from "../components/sandbox/mod";
 
 export const normalReactCompCode = `import React, { useState } from 'react';
 import lodash from 'lodash';
@@ -26,7 +27,7 @@ export function testCode() {
   // React&ES6 代码解析
   let esCode = babelTransform(normalReactCompCode, {
     presets: ["env", "es2015", "react"],
-  }).code;
+  }).code as string;
   console.log("esCode", esCode);
   console.log("moduleDeps", moduleDeps);
 

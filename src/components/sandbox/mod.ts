@@ -1,13 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom";
-// @ts-ignore
 import { transform as babelTransform } from "@babel/standalone";
 import { cdn } from "@/constants";
 
-// 依赖库
-import dayjs from "dayjs";
-import lodash from "lodash";
-import * as antd from "antd";
+// // 依赖库
+// import dayjs from "dayjs";
+// import lodash from "lodash";
+// import * as antd from "antd";
 
 let moduleDeps: any = {
   react: React,
@@ -59,7 +58,7 @@ async function loadMod(nameAndVersion: string) {
     if (entryFile === pkgJSON.module) {
       source = babelTransform(source, {
         presets: ["env", "es2015", "react"],
-      }).code;
+      }).code as string;
     }
 
     const ret = runCode(source);
@@ -75,4 +74,4 @@ async function loadMod(nameAndVersion: string) {
   return moduleDeps[nameAndVersion];
 }
 
-export { babelTransform, loadMod, runCode, moduleDeps };
+export { loadMod, runCode, moduleDeps };

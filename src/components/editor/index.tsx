@@ -50,7 +50,7 @@ export default (props: any) => {
           const v = editor.getValue();
           message.destroy("editorSave");
           message.success({
-            content: "代码已保存本地！",
+            content: "代码已保存！",
             key: "editorSave",
             style: {
               marginTop: "30vh",

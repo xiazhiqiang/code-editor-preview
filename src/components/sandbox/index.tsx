@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Spin } from "antd";
-import { parser, walk } from "./ast";
-import { loadMod, runCode, babelTransform } from "./mod";
+// @ts-ignore
+import * as babelParser from "@babel/parser";
+import babelTraverse from "@babel/traverse";
+import { transform as babelTransform } from "@babel/standalone";
+import { loadMod, runCode } from "./mod";
 import ErrorBoundary from "./errorBoundary";
 import styles from "./index.module.less";
 
@@ -51,17 +54,22 @@ export default (props: IProps) => {
         }
 
         // ast 解析源码
-        const ast = parser.parse(code, {
+        const ast = babelParser.parse(code, {
           sourceType: "module",
-          ecmaVersion: 2020,
+          plugins: ["jsx"],
         });
 
         // 提取源码中依赖的模块
         const codeDeps: string[] = [];
-        walk.simple(ast, {
-          ImportDeclaration(node: any) {
-            if (node && node.source && node.source.value) {
-              codeDeps.push(node.source.value);
+        babelTraverse(ast, {
+          ImportDeclaration: (path) => {
+            if (
+              path &&
+              path.node &&
+              path.node.source &&
+              path.node.source.value
+            ) {
+              codeDeps.push(path.node.source.value);
             }
           },
         });
@@ -73,14 +81,14 @@ export default (props: IProps) => {
         // 源码解析
         let esCode = babelTransform(code, {
           presets: ["env", "es2015", "react"],
-        }).code;
+        }).code as string;
 
         // 在线执行模块
         const e: any = runCode(esCode);
         console.log("ret e", e);
 
-        setError(null);
         setComp(e && e.default ? <e.default /> : null);
+        setError(null);
       } catch (err) {
         // console.log("code error", err);
         setError(err);
