@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import loader from "@monaco-editor/loader";
 import { message, Spin } from "antd";
-import styles from "./index.module.less";
+import "./index.less";
 import { cdn } from "@/constants/index";
 
 loader.config({
@@ -73,9 +73,9 @@ export default (props: any) => {
   }, [value, editor]);
 
   return (
-    <div className={styles["editor-container"]}>
+    <div className="editor-container">
       <Spin
-        className={styles.loading}
+        className="loading"
         spinning={!editor}
         tip="Loading..."
         size="large"
