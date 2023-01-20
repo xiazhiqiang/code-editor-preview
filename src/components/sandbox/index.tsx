@@ -4,16 +4,20 @@ import { Spin } from "antd";
 import * as babelParser from "@babel/parser";
 import babelTraverse from "@babel/traverse";
 import { transform as babelTransform } from "@babel/standalone";
-import { loadMod, runCode } from "./mod";
+import { loadModFromCdn, runCode } from "./mod";
 import ErrorBoundary from "./errorBoundary";
 import styles from "./index.module.less";
 
 interface IProps {
   code?: string;
+  depsVersion?: {
+    name: string;
+    version: string;
+  }[];
 }
 
 export default (props: IProps) => {
-  const { code = "" } = props;
+  const { code = "", depsVersion = [] } = props;
   const [Comp, setComp] = useState<any>(null);
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -75,7 +79,7 @@ export default (props: IProps) => {
         });
 
         for (let i = 0, len = codeDeps.length; i < len; i++) {
-          await loadMod(codeDeps[i]);
+          await loadModFromCdn(codeDeps[i], depsVersion);
         }
 
         // 源码解析
@@ -85,7 +89,7 @@ export default (props: IProps) => {
 
         // 在线执行模块
         const e: any = runCode(esCode);
-        console.log("ret e", e);
+        // console.log("ret e", e);
 
         setComp(e && e.default ? <e.default /> : null);
         setError(null);

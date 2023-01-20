@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import loader from "@monaco-editor/loader";
 import { message, Spin } from "antd";
+import storage from "store2";
+import loader from "@monaco-editor/loader";
+import { normalReactCompCode } from "@/mock/data";
+import { cdnPrefix } from "@/constants/index";
 import "./index.less";
-import { cdn } from "@/constants/index";
 
+// 编辑器配置
 loader.config({
   paths: {
-    vs: `${cdn}/monaco-editor@0.34.1/min/vs`,
+    vs: `${cdnPrefix}/monaco-editor@0.34.1/min/vs`,
   },
   "vs/nls": {
     availableLanguages: {
@@ -17,7 +20,6 @@ loader.config({
 
 export default (props: any) => {
   const {
-    value = "",
     editorStyles = {},
     width = "100%",
     height = "100%",
@@ -29,6 +31,9 @@ export default (props: any) => {
   const editorContainerRef = useRef<any>(null);
 
   useEffect(() => {
+    // 从localStorage中取值，如果没有则展示默认的组件代码
+    const value = storage.local.get("editor.code") || normalReactCompCode;
+
     loader
       .init()
       .then((monaco) => {
@@ -60,17 +65,13 @@ export default (props: any) => {
         });
 
         setEditor(editor);
+        // 初始触发更新
+        onValueSave(value);
       })
       .catch((err) => {
         console.log("load editor error", err);
       });
   }, []);
-
-  useEffect(() => {
-    if (editor) {
-      editor.setValue(value);
-    }
-  }, [value, editor]);
 
   return (
     <div className="editor-container">

@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import storage from "store2";
 import Editor from "@/components/editor";
-import { normalReactCompCode } from "@/mock/data";
 import "./index.less";
 
 export default (props: any) => {
@@ -25,23 +24,11 @@ export default (props: any) => {
     );
   };
 
-  useEffect(() => {
-    if (!code) {
-      const val = storage.local.get("editor.code") || normalReactCompCode;
-      onValueSave(val);
-    }
-  }, []);
-
   return (
     <div className="pageContainer">
       <div className="container">
         <div className="left-container">
-          <Editor
-            width="100%"
-            height="100%"
-            value={code}
-            onValueSave={onValueSave}
-          />
+          <Editor width="100%" height="100%" onValueSave={onValueSave} />
         </div>
         <div className="right-container">
           <iframe
@@ -50,9 +37,12 @@ export default (props: any) => {
             scrolling="no"
             ref={iframeRef}
             onLoad={() => {
-              onValueSave(code);
+              // 首次加载，延迟触发更新避免eventListener没有注册
+              setTimeout(() => {
+                onValueSave(code);
+              }, 2000);
             }}
-            src={"/#/iframe"}
+            src={`/#/iframe`}
           />
         </div>
       </div>

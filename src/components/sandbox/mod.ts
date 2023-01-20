@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { transform as babelTransform } from "@babel/standalone";
-import { cdn } from "@/constants";
+import { cdnPrefix } from "@/constants";
 
 // // 依赖库
 // import dayjs from "dayjs";
@@ -11,6 +11,9 @@ import { cdn } from "@/constants";
 let moduleDeps: any = {
   react: React,
   "react-dom": ReactDOM,
+  React,
+  ReactDOM,
+  // _: lodash,
   // dayjs,
   // lodash,
   // antd,
@@ -35,23 +38,61 @@ function runCode(code: string) {
   }
 }
 
-async function loadMod(nameAndVersion: string) {
+// 从cdn动态加载模块并缓存
+async function loadModFromCdn(nameAndVersion: string, depsVersion: any[] = []) {
   if (moduleDeps[nameAndVersion]) {
     // console.log("mod cached: ", moduleDeps[nameAndVersion]);
     return moduleDeps[nameAndVersion];
   }
 
+  let name = nameAndVersion;
+  let version = "";
+
+  // 若匹配到nameVersion中带有指定版本，则重新设置
+  const matches = nameAndVersion.match(/^(.*)@(\d+\.\d+\.\d)$/);
+  if (matches && matches[1] && matches[2]) {
+    name = matches[1];
+    version = matches[2];
+  } else {
+    // 如果匹配到指定依赖，则采用指定依赖的版本信息
+    const dep: any = depsVersion.find(
+      (i: any) => i && i.name === nameAndVersion
+    );
+    if (dep) {
+      version = dep.version;
+      name = dep.name;
+    }
+  }
+
+  let pkgJSON = null;
+  let entryFile = "";
+
   try {
     // 请求模块信息
-    const pkgJSON = await (
-      await fetch(`${cdn}/${nameAndVersion}/package.json`)
+    pkgJSON = await (
+      await fetch(
+        `${cdnPrefix}/${
+          version && name ? `${name}@${version}` : nameAndVersion
+        }/package.json`
+      )
     ).json();
 
-    // 请求模块源码
-    const entryFile =
+    // 请求模块入口文件
+    entryFile =
       pkgJSON.unpkg || pkgJSON.browser || pkgJSON.module || pkgJSON.main || "";
+
+    if (!pkgJSON || !entryFile) {
+      throw new Error(`PkgJSON and mod entryFile doesn't exist.`);
+    }
+  } catch (err) {
+    console.log("get mod info error: ", err);
+    return moduleDeps[nameAndVersion];
+  }
+
+  try {
+    // 请求模块源码
     let source = await (
-      await fetch(`${cdn}/${nameAndVersion}/${entryFile}`)
+      await fetch(`${cdnPrefix}/${nameAndVersion}/${entryFile}`)
     ).text();
 
     // es module 及 react 解析
@@ -74,4 +115,4 @@ async function loadMod(nameAndVersion: string) {
   return moduleDeps[nameAndVersion];
 }
 
-export { loadMod, runCode, moduleDeps };
+export { loadModFromCdn, runCode, moduleDeps };
