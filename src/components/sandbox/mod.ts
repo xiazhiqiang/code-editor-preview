@@ -8,7 +8,7 @@ import { cdnPrefix } from "@/constants";
 // import lodash from "lodash";
 // import * as antd from "antd";
 
-let moduleDeps: any = {
+export let moduleDeps: any = {
   react: React,
   "react-dom": ReactDOM,
   React,
@@ -19,7 +19,7 @@ let moduleDeps: any = {
   // antd,
 };
 
-function runCode(code: string) {
+export function runCode(code: string) {
   // 定义参数
   const e = {};
   const m = { exports: e };
@@ -39,7 +39,22 @@ function runCode(code: string) {
 }
 
 // 从cdn动态加载模块并缓存
-async function loadModFromCdn(nameAndVersion: string, depsVersion: any[] = []) {
+export const loadModFromCdn = async (
+  nameAndVersion: string,
+  depsVersion: any[] = []
+) => {
+  // 清除动态加载的样式
+  cleanModuleCSS();
+
+  // 若import依赖是css文件，则通过加载css文件方式
+  if (/\.css$/.test(nameAndVersion)) {
+    await appendModuleCss({
+      moduleCSS: [`${cdnPrefix}/${nameAndVersion}`],
+      name: nameAndVersion,
+    });
+    return;
+  }
+
   if (moduleDeps[nameAndVersion]) {
     // console.log("mod cached: ", moduleDeps[nameAndVersion]);
     return moduleDeps[nameAndVersion];
@@ -113,6 +128,102 @@ async function loadModFromCdn(nameAndVersion: string, depsVersion: any[] = []) {
 
   // console.log("mod loaded: ", moduleDeps[nameAndVersion]);
   return moduleDeps[nameAndVersion];
-}
+};
 
-export { loadModFromCdn, runCode, moduleDeps };
+/**
+ * 追加模块样式文件到dom中，过滤掉已存在的moduleCSS
+ */
+export const appendModuleCss = async (
+  { moduleCSS = [], name = "" }: any,
+  forceUpdate = false
+) => {
+  if (!name) {
+    return Promise.resolve(false);
+  }
+
+  // 过滤掉已加载的模块样式，避免浏览器多次回流或重绘
+  const links = Array.from(document.getElementsByTagName("link"));
+
+  let cssList = [...moduleCSS];
+  if (forceUpdate) {
+    // 清除已加载的link css
+    removeModuleCss(cssList);
+  } else {
+    cssList = moduleCSS.filter((href: string) =>
+      links.findIndex(
+        (link) =>
+          (link.getAttribute("href") || "").replace(/http[s]?:/g, "") ===
+          href.replace(/http[s]?:/g, "")
+      ) >= 0
+        ? false
+        : true
+    );
+  }
+
+  await Promise.all(cssList.map((css: string) => insertModuleCss(name, css)));
+  return Promise.resolve(true);
+};
+
+/**
+ * 为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的link标签之后
+ * @param name
+ * @param css
+ * @returns
+ */
+export const insertModuleCss = async (name: string, css: string) => {
+  return new Promise(function (resolve) {
+    const element = document.createElement("link");
+    element.setAttribute("module", name);
+    element.rel = "stylesheet";
+    element.href = css;
+    element.addEventListener(
+      "error",
+      function () {
+        console.log("css asset loaded error: ", css);
+        return resolve(false);
+      },
+      false
+    );
+    element.addEventListener(
+      "load",
+      function () {
+        return resolve(true);
+      },
+      false
+    );
+
+    const bodyLinks = document.body.getElementsByTagName("link") || [];
+    document.body.insertBefore(
+      element,
+      bodyLinks.length > 0 && bodyLinks[bodyLinks.length - 1].nextSibling
+        ? bodyLinks[bodyLinks.length - 1].nextSibling
+        : document.body.firstChild
+    );
+  });
+};
+
+export const removeModuleCss = (cssList: string[]) => {
+  if (!cssList || cssList.length < 1) {
+    return;
+  }
+  Array.from(document.getElementsByTagName("link")).forEach((link: any) => {
+    if (
+      cssList.findIndex(
+        (href) =>
+          href.replace(/http[?]:/g, "") ===
+          (link.getAttribute("href") || "").replace(/http[?]:/g, "")
+      ) >= 0
+    ) {
+      link.parentNode.removeChild(link);
+    }
+  });
+};
+
+// 清除带有module属性的css样式
+export const cleanModuleCSS = () => {
+  Array.from(document.getElementsByTagName("link")).forEach((link: any) => {
+    if (link.getAttribute("module")) {
+      link.parentNode.removeChild(link);
+    }
+  });
+};
