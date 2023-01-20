@@ -43,9 +43,6 @@ export const loadModFromCdn = async (
   nameAndVersion: string,
   depsVersion: any[] = []
 ) => {
-  // 清除动态加载的样式
-  cleanModuleCSS();
-
   // 若import依赖是css文件，则通过加载css文件方式
   if (/\.css$/.test(nameAndVersion)) {
     await appendModuleCss({

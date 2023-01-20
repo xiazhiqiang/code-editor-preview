@@ -4,7 +4,7 @@ import { Spin } from "antd";
 import * as babelParser from "@babel/parser";
 import babelTraverse from "@babel/traverse";
 import { transform as babelTransform } from "@babel/standalone";
-import { loadModFromCdn, runCode } from "./mod";
+import { loadModFromCdn, runCode, cleanModuleCSS } from "./mod";
 import ErrorBoundary from "./errorBoundary";
 import styles from "./index.module.less";
 
@@ -77,6 +77,9 @@ export default (props: IProps) => {
             }
           },
         });
+
+        // 清除动态加载的样式
+        cleanModuleCSS();
 
         for (let i = 0, len = codeDeps.length; i < len; i++) {
           await loadModFromCdn(codeDeps[i], depsVersion);
