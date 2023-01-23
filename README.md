@@ -2,7 +2,7 @@
 
 小而美的在线 React 组件代码编辑器，动态渲染及实时预览。
 
-![预览图](./code-editor-preview_0.2.x.gif)
+<img src="./code-editor-preview_0.2.x.gif" width="100%" height="auto" alt="预览图" />
 
 本地启动：`http://127.0.0.1:8000/#/code`
 
