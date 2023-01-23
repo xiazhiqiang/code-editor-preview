@@ -4,12 +4,25 @@ import { Spin } from "antd";
 import * as babelParser from "@babel/parser";
 import babelTraverse from "@babel/traverse";
 import { transform as babelTransform } from "@babel/standalone";
-import { loadModFromCdn, runCode, cleanModuleCSS } from "./mod";
+import {
+  loadModFromCdn,
+  runCode,
+  cleanModuleCss,
+  cleanModuleStyle,
+} from "./mod";
 import ErrorBoundary from "./errorBoundary";
 import styles from "./index.module.less";
 
+export interface ICode {
+  path?: string;
+  value?: string | undefined;
+  storeKey?: string;
+  isCss?: boolean;
+  isEntry?: boolean;
+}
+
 interface IProps {
-  code?: string;
+  codes?: ICode[];
   depsVersion?: {
     name: string;
     version: string;
@@ -17,7 +30,7 @@ interface IProps {
 }
 
 export default (props: IProps) => {
-  const { code = "", depsVersion = [] } = props;
+  const { codes = [], depsVersion = [] } = props;
   const [Comp, setComp] = useState<any>(null);
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -47,63 +60,69 @@ export default (props: IProps) => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-
     (async () => {
-      try {
-        if (!code) {
-          setComp("");
-          setLoading(false);
-          return;
+      setLoading(true);
+
+      // 入口jsx文件为空
+      if (
+        !codes ||
+        codes.length < 1 ||
+        !codes.find((i) => i && i.isEntry && i.value)
+      ) {
+        setComp("");
+      } else {
+        const jsx: ICode = codes.find((i) => i && i.isEntry) || {};
+        const innerCssList: ICode[] = codes.filter((i) => i && i.isCss) || [];
+        try {
+          const ret: any = await runJsxCode(jsx.value as string, innerCssList);
+          setComp(ret && ret.default ? <ret.default /> : null);
+          setError(null);
+        } catch (err) {
+          setError(err);
         }
-
-        // ast 解析源码
-        const ast = babelParser.parse(code, {
-          sourceType: "module",
-          plugins: ["jsx"],
-        });
-
-        // 提取源码中依赖的模块
-        const codeDeps: string[] = [];
-        babelTraverse(ast, {
-          ImportDeclaration: (path) => {
-            if (
-              path &&
-              path.node &&
-              path.node.source &&
-              path.node.source.value
-            ) {
-              codeDeps.push(path.node.source.value);
-            }
-          },
-        });
-
-        // 清除动态加载的样式
-        cleanModuleCSS();
-
-        for (let i = 0, len = codeDeps.length; i < len; i++) {
-          await loadModFromCdn(codeDeps[i], depsVersion);
-        }
-
-        // 源码解析
-        let esCode = babelTransform(code, {
-          presets: ["env", "es2015", "react"],
-        }).code as string;
-
-        // 在线执行模块
-        const e: any = runCode(esCode);
-        // console.log("ret e", e);
-
-        setComp(e && e.default ? <e.default /> : null);
-        setError(null);
-      } catch (err) {
-        // console.log("code error", err);
-        setError(err);
       }
 
       setLoading(false);
     })();
-  }, [code]);
+  }, [codes]);
+
+  // 执行jsx代码
+  const runJsxCode = async (code: string, innerCssList: ICode[] = []) => {
+    // ast 解析源码
+    const ast = babelParser.parse(code, {
+      sourceType: "module",
+      plugins: ["jsx"],
+    });
+
+    // 提取源码中依赖的模块
+    const codeDeps: string[] = [];
+    babelTraverse(ast, {
+      ImportDeclaration: (path) => {
+        if (path && path.node && path.node.source && path.node.source.value) {
+          codeDeps.push(path.node.source.value);
+        }
+      },
+    });
+
+    // 清除模块link标签
+    cleanModuleCss();
+    // 清除模块style标签
+    cleanModuleStyle();
+
+    for (let i = 0, len = codeDeps.length; i < len; i++) {
+      await loadModFromCdn(codeDeps[i], depsVersion, innerCssList);
+    }
+
+    // 源码解析
+    let esCode = babelTransform(code, {
+      presets: ["env", "es2015", "react"],
+    }).code as string;
+
+    // 在线执行模块
+    const ret = runCode(esCode);
+    // console.log("ret", ret);
+    return ret;
+  };
 
   return (
     <div className={styles.container}>

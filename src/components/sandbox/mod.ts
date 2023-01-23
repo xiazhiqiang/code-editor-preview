@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { transform as babelTransform } from "@babel/standalone";
 import { cdnPrefix } from "@/constants";
+import { ICode } from "./index";
 
 // // 依赖库
 // import dayjs from "dayjs";
@@ -41,14 +42,19 @@ export function runCode(code: string) {
 // 从cdn动态加载模块并缓存
 export const loadModFromCdn = async (
   nameAndVersion: string,
-  depsVersion: any[] = []
+  depsVersion: any[] = [],
+  innerCssList: ICode[] = []
 ) => {
-  // 若import依赖是css文件，则通过加载css文件方式
+  // 加载内置的样式，如/index.css路径
+  if (/^\/.+\.css$/.test(nameAndVersion)) {
+    const { path, value }: any =
+      innerCssList.find((i: any) => i && i.path === nameAndVersion) || {};
+    await insertModuleStyle(path, value);
+    return;
+  }
+  // import其他库的css文件，如antd/dist/antd.css
   if (/\.css$/.test(nameAndVersion)) {
-    await appendModuleCss({
-      moduleCSS: [`${cdnPrefix}/${nameAndVersion}`],
-      name: nameAndVersion,
-    });
+    await insertModuleCss(nameAndVersion, `${cdnPrefix}/${nameAndVersion}`);
     return;
   }
 
@@ -127,48 +133,14 @@ export const loadModFromCdn = async (
   return moduleDeps[nameAndVersion];
 };
 
-/**
- * 追加模块样式文件到dom中，过滤掉已存在的moduleCSS
- */
-export const appendModuleCss = async (
-  { moduleCSS = [], name = "" }: any,
-  forceUpdate = false
-) => {
-  if (!name) {
-    return Promise.resolve(false);
-  }
-
-  // 过滤掉已加载的模块样式，避免浏览器多次回流或重绘
-  const links = Array.from(document.getElementsByTagName("link"));
-
-  let cssList = [...moduleCSS];
-  if (forceUpdate) {
-    // 清除已加载的link css
-    removeModuleCss(cssList);
-  } else {
-    cssList = moduleCSS.filter((href: string) =>
-      links.findIndex(
-        (link) =>
-          (link.getAttribute("href") || "").replace(/http[s]?:/g, "") ===
-          href.replace(/http[s]?:/g, "")
-      ) >= 0
-        ? false
-        : true
-    );
-  }
-
-  await Promise.all(cssList.map((css: string) => insertModuleCss(name, css)));
-  return Promise.resolve(true);
-};
-
-/**
- * 为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的link标签之后
- * @param name
- * @param css
- * @returns
- */
+// 为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的link标签之后
 export const insertModuleCss = async (name: string, css: string) => {
   return new Promise(function (resolve) {
+    if (!name || !css) {
+      resolve(false);
+      return;
+    }
+
     const element = document.createElement("link");
     element.setAttribute("module", name);
     element.rel = "stylesheet";
@@ -189,38 +161,108 @@ export const insertModuleCss = async (name: string, css: string) => {
       false
     );
 
-    const bodyLinks = document.body.getElementsByTagName("link") || [];
-    document.body.insertBefore(
-      element,
-      bodyLinks.length > 0 && bodyLinks[bodyLinks.length - 1].nextSibling
-        ? bodyLinks[bodyLinks.length - 1].nextSibling
-        : document.body.firstChild
-    );
+    // 找出body内部含有module属性的link标签，然后追加到最后一个link后面，如果没有则追加到body的第一个子元素前面
+    const bodyLinks = Array.from(
+      document.body.getElementsByTagName("link")
+    ).filter((i) => i && i.getAttribute("module"));
+    if (bodyLinks.length > 0) {
+      if (bodyLinks[bodyLinks.length - 1].nextSibling) {
+        document.body.insertBefore(
+          element,
+          bodyLinks[bodyLinks.length - 1].nextSibling
+        );
+      } else {
+        document.body.appendChild(element);
+      }
+    } else {
+      if (document.body.firstChild) {
+        document.body.insertBefore(element, document.body.firstChild);
+      } else {
+        document.body.appendChild(element);
+      }
+    }
   });
 };
 
-export const removeModuleCss = (cssList: string[]) => {
-  if (!cssList || cssList.length < 1) {
-    return;
+// 清除带有module属性的link标签
+export const cleanModuleCss = () => {
+  const bodyLinks = Array.from(
+    document.body.getElementsByTagName("link")
+  ).filter((i) => i && i.getAttribute("module"));
+  for (let i = 0; i < bodyLinks.length; i++) {
+    bodyLinks[i].parentNode?.removeChild(bodyLinks[i]);
   }
-  Array.from(document.getElementsByTagName("link")).forEach((link: any) => {
-    if (
-      cssList.findIndex(
-        (href) =>
-          href.replace(/http[?]:/g, "") ===
-          (link.getAttribute("href") || "").replace(/http[?]:/g, "")
-      ) >= 0
-    ) {
-      link.parentNode.removeChild(link);
+};
+
+// 添加模块内置的css style标签样式，为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的模块link标签之后
+export const insertModuleStyle = async (name: string, styleContent: string) => {
+  return new Promise((resolve) => {
+    if (!name || !styleContent) {
+      resolve(false);
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.innerHTML = styleContent || "";
+    style.setAttribute("module", name);
+
+    style.addEventListener(
+      "error",
+      function () {
+        console.log("style insert error: ", styleContent);
+        return resolve(false);
+      },
+      false
+    );
+    style.addEventListener(
+      "load",
+      function () {
+        return resolve(true);
+      },
+      false
+    );
+
+    // 找出body内部含有module属性的link标签以及含有module属性的style标签，若存在style标签，则追加到style标签之后；否则追加到最后一个link后面；如果link标签也没有，则追加到body的第一个子元素之前
+    const bodyLinks = Array.from(
+      document.body.getElementsByTagName("link")
+    ).filter((i) => i && i.getAttribute("module"));
+    const bodyStyles = Array.from(
+      document.body.getElementsByTagName("style")
+    ).filter((i) => i && i.getAttribute("module"));
+    if (bodyStyles.length > 0) {
+      if (bodyStyles[bodyStyles.length - 1].nextSibling) {
+        document.body.insertBefore(
+          style,
+          bodyStyles[bodyStyles.length - 1].nextSibling
+        );
+      } else {
+        document.body.appendChild(style);
+      }
+    } else if (bodyLinks.length > 0) {
+      if (bodyLinks[bodyLinks.length - 1].nextSibling) {
+        document.body.insertBefore(
+          style,
+          bodyLinks[bodyLinks.length - 1].nextSibling
+        );
+      } else {
+        document.body.appendChild(style);
+      }
+    } else {
+      if (document.body.firstChild) {
+        document.body.insertBefore(style, document.body.firstChild);
+      } else {
+        document.appendChild(style);
+      }
     }
   });
 };
 
-// 清除带有module属性的css样式
-export const cleanModuleCSS = () => {
-  Array.from(document.getElementsByTagName("link")).forEach((link: any) => {
-    if (link.getAttribute("module")) {
-      link.parentNode.removeChild(link);
-    }
-  });
+// 清除带有module属性的style标签
+export const cleanModuleStyle = () => {
+  const bodyStyles = Array.from(
+    document.body.getElementsByTagName("style")
+  ).filter((i) => i && i.getAttribute("module"));
+  for (let i = 0; i < bodyStyles.length; i++) {
+    bodyStyles[i].parentNode?.removeChild(bodyStyles[i]);
+  }
 };

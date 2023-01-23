@@ -2,18 +2,20 @@ import React, { useState, useEffect, useCallback } from "react";
 import Sandbox from "@/components/sandbox";
 import "./index.less";
 
-export default (props: any) => {
-  const [code, setCode] = useState<string>("");
+export default () => {
+  const [codes, setCodes] = useState<any>([]);
 
   const messageHandle = useCallback(
     (e: any) => {
       const { type = "", data = "" } = e.data || {};
-      if (type !== "codeIframe") {
+      if (["codeIframe", "codes"].indexOf(type) < 0) {
         return;
       }
-      setCode(data);
+      if (type === "codes") {
+        setCodes(data);
+      }
     },
-    [code]
+    [codes]
   );
 
   // 监听父页面传递过来的数据
@@ -27,7 +29,7 @@ export default (props: any) => {
 
   return (
     <div className="container">
-      <Sandbox code={code} />
+      <Sandbox codes={codes} />
     </div>
   );
 };
