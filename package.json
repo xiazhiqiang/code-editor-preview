@@ -1,6 +1,6 @@
 {
   "name": "code-editor-preview",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "xiazhiqiang",
   "scripts": {
     "dev": "umi dev",
