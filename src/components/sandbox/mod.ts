@@ -1,14 +1,13 @@
+import { cdnPrefix } from "@/constants";
 import { transform as babelTransform } from "@babel/standalone";
+import less from "less";
 import React from "react";
 import ReactDOM from "react-dom";
-// @ts-ignore
-import { cdnPrefix } from "@/constants";
-import less from "less";
 import { ICode } from "./index";
 
-// // 依赖库
-// import dayjs from "dayjs";
-// import lodash from "lodash";
+// 依赖库
+import dayjs from "dayjs";
+import lodash from "lodash";
 // import * as antd from "antd";
 
 export let moduleDeps: any = {
@@ -16,9 +15,9 @@ export let moduleDeps: any = {
   "react-dom": ReactDOM,
   React,
   ReactDOM,
-  // _: lodash,
-  // dayjs,
-  // lodash,
+  _: lodash,
+  dayjs,
+  lodash,
   // antd,
 };
 
@@ -48,7 +47,7 @@ export const loadModFromCdn = async (
   innerCssList: ICode[] = []
 ) => {
   // 加载内置的样式，如/index.css路径
-  if (/^\/.+\.css$/.test(nameAndVersion)) {
+  if (/^\/.+\.(css|less)$/.test(nameAndVersion)) {
     const { path, value }: any =
       innerCssList.find((i: any) => i && i.path === nameAndVersion) || {};
     await insertModuleStyle(path, value);
@@ -198,16 +197,16 @@ export const cleanModuleCss = () => {
 
 // 添加模块内置的css style标签样式，为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的模块link标签之后
 export const insertModuleStyle = async (name: string, styleContent: string) => {
-  const content = await new Promise((resolve) => {
-    less.render(styleContent || "", (err: any, tree: any) => {
-      if (err) {
-        console.log("module style ", err);
-        resolve("");
-      } else {
-        resolve(tree.css || "");
-      }
-    });
-  });
+  let content = styleContent || "";
+  if (/less$/.test(name)) {
+    try {
+      const ret = (await less.render(content, { compress: true })) || {};
+      content = ret.css || "";
+    } catch (err) {
+      console.log("less style error: ", err);
+      content = "";
+    }
+  }
 
   return new Promise((resolve) => {
     if (!name || !styleContent) {
