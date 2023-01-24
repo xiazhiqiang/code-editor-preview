@@ -2,19 +2,24 @@
 
 小而美的在线 React 组件代码编辑器，动态渲染及实时预览。
 
-![预览图](./code-editor-preview_0.2.x.gif)
+<img src="./code-editor-preview_0.2.x.gif" width="100%" height="auto" alt="预览图" />
 
 本地启动：`http://127.0.0.1:8000/#/code`
 
-## 功能
+## 版本功能
+
+### 0.2.1
+
+> 在 0.2.0 基础上
+
+- 新增编辑器保存时格式化代码
 
 ### 0.2.0
 
-- 支持 React Hooks 组件开发
-- 支持引入不同版本的 umd 包（例如：import lodash from 'lodash@@4.17.21'）
-- 支持引入其他包的 css 资源（例如：import "antd@4.24.7/dist/antd.css";）
-- 支持切换组件 jsx 及 css 样式 Tab 切换编辑和保存
-- 支持引入 index.css（例如：import '/index.css'; /index.css 为了区别其他包的 css 资源，以“/”开头）
+> 在 0.1.0 基础上
+
+- 新增支持切换组件 jsx 及 css 样式 Tab 切换编辑和保存
+- 新增支持引入 index.css（例如：import '/index.css'; /index.css 为了区别其他包的 css 资源，以“/”开头）
 
 ### 0.1.0
 

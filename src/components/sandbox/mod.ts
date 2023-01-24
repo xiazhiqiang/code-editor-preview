@@ -1,7 +1,9 @@
+import { transform as babelTransform } from "@babel/standalone";
 import React from "react";
 import ReactDOM from "react-dom";
-import { transform as babelTransform } from "@babel/standalone";
+// @ts-ignore
 import { cdnPrefix } from "@/constants";
+import less from "less";
 import { ICode } from "./index";
 
 // // 依赖库
@@ -196,14 +198,25 @@ export const cleanModuleCss = () => {
 
 // 添加模块内置的css style标签样式，为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的模块link标签之后
 export const insertModuleStyle = async (name: string, styleContent: string) => {
+  const content = await new Promise((resolve) => {
+    less.render(styleContent || "", (err: any, tree: any) => {
+      if (err) {
+        console.log("module style ", err);
+        resolve("");
+      } else {
+        resolve(tree.css || "");
+      }
+    });
+  });
+
   return new Promise((resolve) => {
     if (!name || !styleContent) {
       resolve(false);
       return;
     }
 
-    const style = document.createElement("style");
-    style.innerHTML = styleContent || "";
+    const style: any = document.createElement("style");
+    style.innerHTML = content;
     style.setAttribute("module", name);
 
     style.addEventListener(
