@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { message, Spin, Tag } from "antd";
-import storage from "store2";
-import loader from "@monaco-editor/loader";
-import { normalReactCompCode } from "@/mock/data";
 import {
   cdnPrefix,
-  editorSaveJsxKey,
+  defaultCompCss,
+  defaultCompJsx,
   editorSaveCssKey,
+  editorSaveJsxKey,
 } from "@/constants/index";
+import loader from "@monaco-editor/loader";
+import { message, Spin, Tag } from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
+import storage from "store2";
 import "./index.less";
 
 // 编辑器配置
@@ -24,6 +25,38 @@ loader.config({
 
 // 编辑器状态
 let editorStatus: any = {};
+
+const files = [
+  {
+    path: "/index.jsx",
+    storeKey: editorSaveJsxKey,
+    value: defaultCompJsx,
+    isEntry: true,
+  },
+  {
+    path: "/index.css",
+    storeKey: editorSaveCssKey,
+    value: defaultCompCss,
+    isCss: true,
+  },
+];
+
+const getCodes = () => {
+  return files.map((file) => {
+    let { value = "", isEntry, storeKey } = file || {};
+
+    // 从localStorage中取值，如果没有则展示默认的组件代码
+    value = storage.local.get(storeKey) || value || "";
+    if (isEntry && !value) {
+      value = defaultCompJsx;
+    }
+
+    return {
+      ...file,
+      value,
+    };
+  });
+};
 
 export default (props: any) => {
   const {
@@ -50,22 +83,7 @@ export default (props: any) => {
     [filesModifyState]
   );
 
-  // 从localStorage中取值，如果没有则展示默认的组件代码
-  const jsx = storage.local.get(editorSaveJsxKey) || normalReactCompCode;
-  const css = storage.local.get(editorSaveCssKey) || "";
-
-  const files: any = {
-    "/index.jsx": {
-      storeKey: editorSaveJsxKey,
-      value: jsx,
-      isEntry: true,
-    },
-    "/index.css": {
-      storeKey: editorSaveCssKey,
-      value: css,
-      isCss: true,
-    },
-  };
+  const files: any = getCodes();
 
   useEffect(() => {
     loader
@@ -88,23 +106,23 @@ export default (props: any) => {
         setEditor(editor);
 
         editor.onDidChangeModelContent(() => {
-          // saveFile({ v: editor.getValue(), path: filePathRef.current });
           modifyFile({ path: filePathRef.current, state: true });
         });
 
         // 初始化editor models
-        Object.keys(files).forEach((path) =>
+        files.forEach((file: any) =>
           monaco.editor.createModel(
-            files[path].value,
-            /css$/.test(path) ? "css" : "javascript",
-            new monaco.Uri().with({ path })
+            file.value,
+            /css$/.test(file.path) ? "css" : "javascript",
+            new monaco.Uri().with({ path: file.path })
           )
         );
 
-        // 默认打开第一个文件
-        const defaultFilePath = Object.keys(files)[0] || "";
-        setFilePath(defaultFilePath);
-        openFile({ editor, monaco, path: defaultFilePath });
+        // 获取入口文件路径
+        const { path: entryFilePath = "" } =
+          files.find((i: any) => i && i.isEntry) || {};
+        setFilePath(entryFilePath);
+        openFile({ editor, monaco, path: entryFilePath });
 
         // 初始触发更新
         onCodesSave(getCodes());
@@ -125,8 +143,10 @@ export default (props: any) => {
 
     // cmd + s 保存
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      // 保存之前格式化代码，会触发onDidChangeModelContent事件
+      editor.getAction("editor.action.formatDocument").run();
+
       // 保存代码到localStorage
-      const v = editor.getValue();
       message.destroy("editorSave");
       message.success({
         content: `${filePath.slice(1)}已保存`,
@@ -136,20 +156,24 @@ export default (props: any) => {
         },
       });
 
-      saveFile({ v, path: filePath });
+      // 增加延迟防止在onDidChangeModelContent事件之前执行保存
+      setTimeout(() => {
+        const v = editor.getValue();
+        saveFile({ v, path: filePath });
+      }, 100);
     });
   }, [editor, monaco, filePath]);
 
-  const getCodes = () => {
-    return Object.keys(files).map((path) => {
-      const value = storage.local.get(files[path].storeKey);
-      return {
-        ...files[path],
-        path,
-        value,
-      };
-    });
-  };
+  // useEffect(() => {
+  //   const observer = new ResizeObserver(() => {
+  //     setTimeout(() => editor && editor.layout(), 0);
+  //   });
+  //   observer.observe(editorContainerRef.current);
+
+  //   return () => {
+  //     observer.disconnect();
+  //   };
+  // }, [editor]);
 
   const modifyFile = ({ path = "", state = false } = {}) => {
     const newFilesModifyState: any = { ...filesModifyStateRef.current };
@@ -184,17 +208,6 @@ export default (props: any) => {
     model && editor.setModel(model);
   };
 
-  // useEffect(() => {
-  //   const observer = new ResizeObserver(() => {
-  //     window.setTimeout(() => editor && editor.layout(), 0);
-  //   });
-  //   observer.observe(editorContainerRef.current);
-
-  //   return () => {
-  //     observer.disconnect();
-  //   };
-  // }, [editor]);
-
   const switchFile = ({ path = "" }) => {
     // 保存之前的文件路径编辑器状态
     editorStatus[filePath] = editor.saveViewState();
@@ -226,17 +239,23 @@ export default (props: any) => {
       />
       {editor ? (
         <div>
-          {Object.keys(files).map((p) => {
+          {files.map((file: any = {}) => {
             return (
               <Tag
-                color={filePath === p ? "rgb(41,44,51)" : "rgb(34,37,42)"}
+                color={
+                  filePath === file.path ? "rgb(41,44,51)" : "rgb(34,37,42)"
+                }
                 className={`file-tag ${
-                  filePath === p ? "file-tag--focus" : ""
-                } ${filesModifyStateRef.current[p] ? "file-tag--modify" : ""}`}
-                onClick={() => switchFile({ path: p })}
+                  filePath === file.path ? "file-tag--focus" : ""
+                } ${
+                  filesModifyStateRef.current[file.path]
+                    ? "file-tag--modify"
+                    : ""
+                }`}
+                onClick={() => switchFile({ path: file.path })}
               >
-                {filesModifyStateRef.current[p] ? "* " : ""}
-                {p.slice(1)}
+                {filesModifyStateRef.current[file.path] ? "* " : ""}
+                {file.path.slice(1)}
               </Tag>
             );
           })}

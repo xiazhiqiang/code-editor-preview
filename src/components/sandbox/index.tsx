@@ -11,11 +11,11 @@ import {
   cleanModuleStyle,
 } from "./mod";
 import ErrorBoundary from "./errorBoundary";
-import styles from "./index.module.less";
+import "./index.less";
 
 export interface ICode {
   path?: string;
-  value?: string | undefined;
+  value?: string;
   storeKey?: string;
   isCss?: boolean;
   isEntry?: boolean;
@@ -125,12 +125,12 @@ export default (props: IProps) => {
   };
 
   return (
-    <div className={styles.container}>
+    <div className="sandbox-container">
       <Spin
         size="large"
         tip="Loading..."
         spinning={loading}
-        style={{ minHeight: "100vh", width: "100%", color: "#fff" }}
+        className="sandbox-loading"
       >
         <ErrorBoundary error={error} onError={setError}>
           {Comp}
