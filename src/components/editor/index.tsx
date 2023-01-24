@@ -272,9 +272,8 @@ export default (props: any) => {
         tip="Loading..."
         size="large"
       />
-      {editor ? (
-        <div>
-          {files.map((file: any = {}) => {
+      {editor
+        ? files.map((file: any = {}) => {
             return (
               <Tag
                 color={
@@ -293,9 +292,8 @@ export default (props: any) => {
                 {file.path.slice(1)}
               </Tag>
             );
-          })}
-        </div>
-      ) : null}
+          })
+        : null}
 
       <div
         style={{ width, height, ...editorStyles }}
