@@ -1,6 +1,7 @@
 export const cdnPrefix = "https://unpkg.com"; // https://cdn.jsdelivr.net/npm, https://unpkg.com
 export const editorSaveJsxKey = "editor.code.jsx";
 export const editorSaveCssKey = "editor.code.css";
+export const editorSaveLessKey = "editor.code.less";
 
 // 默认组件jsx入口代码
 export const defaultCompJsx = `import React, { useState } from 'react';
@@ -9,6 +10,7 @@ import dayjs from 'dayjs';
 import { Button } from 'antd';
 import "antd@4.24.7/dist/antd.css";
 import '/index.css';
+import '/index2.less';
 
 export default (props) => {
   const [count, setCount] = useState(0);
@@ -31,7 +33,14 @@ export default (props) => {
 
 // 默认组件内置css
 export const defaultCompCss = `.wrapper {
-  padding: 20px;
   background: burlywood;
+}
+`;
+
+// 默认组件内置less
+export const defaultCompLess = `@w: 20px;
+
+.wrapper {
+  padding: @w;
 }
 `;

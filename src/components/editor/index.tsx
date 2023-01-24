@@ -2,10 +2,13 @@ import {
   cdnPrefix,
   defaultCompCss,
   defaultCompJsx,
+  defaultCompLess,
   editorSaveCssKey,
   editorSaveJsxKey,
+  editorSaveLessKey,
 } from "@/constants/index";
-import loader from "@monaco-editor/loader";
+// import loader from "@monaco-editor/loader";
+import { loader } from "@monaco-editor/react";
 import { message, Spin, Tag } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import storage from "store2";
@@ -26,6 +29,7 @@ loader.config({
 // 编辑器状态
 let editorStatus: any = {};
 
+// 默认组件文件
 const files = [
   {
     path: "/index.jsx",
@@ -39,10 +43,16 @@ const files = [
     value: defaultCompCss,
     isCss: true,
   },
+  {
+    path: "/index2.less",
+    storeKey: editorSaveLessKey,
+    value: defaultCompLess,
+    isCss: true,
+  },
 ];
 
 const getCodes = () => {
-  return files.map((file) => {
+  return files.map((file: any) => {
     let { value = "", isEntry, storeKey } = file || {};
 
     // 从localStorage中取值，如果没有则展示默认的组件代码
@@ -56,6 +66,21 @@ const getCodes = () => {
       value,
     };
   });
+};
+
+const getFileLanguage = (path: string = "") => {
+  let language = "javascript";
+  if (/jsx?$/.test(path)) {
+    language = "javascript";
+  }
+  if (/css$/.test(path)) {
+    language = "css";
+  }
+  if (/less$/.test(path)) {
+    language = "less";
+  }
+
+  return language;
 };
 
 export default (props: any) => {
@@ -110,13 +135,14 @@ export default (props: any) => {
         });
 
         // 初始化editor models
-        files.forEach((file: any) =>
+        files.forEach((file: any) => {
+          const language = getFileLanguage(file.path);
           monaco.editor.createModel(
             file.value,
-            /css$/.test(file.path) ? "css" : "javascript",
+            language,
             new monaco.Uri().with({ path: file.path })
-          )
-        );
+          );
+        });
 
         // 获取入口文件路径
         const { path: entryFilePath = "" } =
@@ -182,12 +208,21 @@ export default (props: any) => {
   };
 
   const saveFile = ({ v = "", path = "" }) => {
-    if (/css$/.test(path)) {
-      storage.local.set(editorSaveCssKey, v, true);
+    const language = getFileLanguage(path);
+    let key = editorSaveJsxKey;
+    switch (language) {
+      case "css":
+        key = editorSaveCssKey;
+        break;
+      case "less":
+        key = editorSaveLessKey;
+        break;
+      case "javascript":
+        key = editorSaveJsxKey;
+        break;
     }
-    if (/jsx?$/.test(path)) {
-      storage.local.set(editorSaveJsxKey, v, true);
-    }
+
+    storage.local.set(key, v, true);
 
     // 清空修改状态
     modifyFile({ path, state: false });

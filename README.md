@@ -12,7 +12,8 @@
 
 > 在 0.2.0 基础上
 
-- 新增编辑器保存时格式化代码
+- 新增编辑器保存时自动格式化代码
+- 新增组件 less 样式编码及解析
 
 ### 0.2.0
 
@@ -24,8 +25,8 @@
 ### 0.1.0
 
 - 支持 React Hooks 组件开发
-- 支持引入不同版本的 umd 包（例如：import lodash from 'lodash@@4.17.21'）
-- 支持引入其他包的 css 资源（例如：import "antd@4.24.7/dist/antd.css";）
+- 支持引入不同版本的 umd 包（例如：import lodash from "lodash@@4.17.21"）
+- 支持引入其他包的 css 资源（例如：import "antd@4.24.7/dist/antd.css"）
 - 支持编辑组件 jsx 代码并保存
 
 ## 实现原理
