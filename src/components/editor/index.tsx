@@ -1,3 +1,14 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { loader } from "@monaco-editor/react";
+import { message, Spin, Tag } from "antd";
+import {
+  RightSquareOutlined,
+  LeftSquareOutlined,
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+} from "@ant-design/icons";
+import storage from "store2";
+import debounce from "lodash/debounce";
 import {
   cdnPrefix,
   defaultCompCss,
@@ -7,11 +18,6 @@ import {
   editorSaveJsxKey,
   editorSaveLessKey,
 } from "@/constants/index";
-// import loader from "@monaco-editor/loader";
-import { loader } from "@monaco-editor/react";
-import { message, Spin, Tag } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
-import storage from "store2";
 import "./index.less";
 
 // 编辑器配置
@@ -90,6 +96,12 @@ export default (props: any) => {
     height = "100%",
     language = "javascript",
     onCodesSave = () => {},
+
+    // 编辑器顶部操作及状态
+    displaySandbox = true,
+    toggleDisplaySandbox = () => {},
+    fullScreenPreview = false,
+    toggleFullScreenPreview = () => {},
   } = props;
 
   const [editor, setEditor] = useState<any>(null);
@@ -190,16 +202,19 @@ export default (props: any) => {
     });
   }, [editor, monaco, filePath]);
 
-  // useEffect(() => {
-  //   const observer = new ResizeObserver(() => {
-  //     setTimeout(() => editor && editor.layout(), 0);
-  //   });
-  //   observer.observe(editorContainerRef.current);
+  // 监听编辑器resize变化，更新编辑器layout
+  useEffect(() => {
+    const observer = new ResizeObserver(
+      debounce(() => {
+        editor && editor.layout();
+      }, 200)
+    );
+    observer.observe(editorContainerRef.current);
 
-  //   return () => {
-  //     observer.disconnect();
-  //   };
-  // }, [editor]);
+    return () => {
+      observer.disconnect();
+    };
+  }, [editor]);
 
   const modifyFile = ({ path = "", state = false } = {}) => {
     const newFilesModifyState: any = { ...filesModifyStateRef.current };
@@ -272,18 +287,20 @@ export default (props: any) => {
         tip="Loading..."
         size="large"
       />
-      {editor
-        ? files.map((file: any = {}) => {
+      {editor ? (
+        <div className="file-tabs">
+          {files.map((file: any = {}, idx: number) => {
             return (
               <Tag
-                color={
-                  filePath === file.path ? "rgb(41,44,51)" : "rgb(34,37,42)"
-                }
-                className={`file-tag ${
-                  filePath === file.path ? "file-tag--focus" : ""
+                key={`fileTabItem_${idx}`}
+                // color={
+                //   filePath === file.path ? "rgb(41,44,51)" : "rgb(34,37,42)"
+                // }
+                className={`file-tab ${
+                  filePath === file.path ? "file-tab--focus" : ""
                 } ${
                   filesModifyStateRef.current[file.path]
-                    ? "file-tag--modify"
+                    ? "file-tab--modify"
                     : ""
                 }`}
                 onClick={() => switchFile({ path: file.path })}
@@ -292,8 +309,21 @@ export default (props: any) => {
                 {file.path.slice(1)}
               </Tag>
             );
-          })
-        : null}
+          })}
+          <div className="editor-actions">
+            {displaySandbox ? (
+              <RightSquareOutlined onClick={toggleDisplaySandbox} />
+            ) : (
+              <LeftSquareOutlined onClick={toggleDisplaySandbox} />
+            )}
+            {fullScreenPreview ? (
+              <FullscreenExitOutlined onClick={toggleFullScreenPreview} />
+            ) : (
+              <FullscreenOutlined onClick={toggleFullScreenPreview} />
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <div
         style={{ width, height, ...editorStyles }}

@@ -42,5 +42,7 @@ export const defaultCompLess = `@w: 20px;
 
 .wrapper {
   padding: @w;
+  width: 110vw;
+  height: 110vh;
 }
 `;

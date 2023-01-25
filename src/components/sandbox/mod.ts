@@ -142,44 +142,59 @@ export const insertModuleCss = async (name: string, css: string) => {
       return;
     }
 
-    const element = document.createElement("link");
-    element.setAttribute("module", name);
-    element.rel = "stylesheet";
-    element.href = css;
-    element.addEventListener(
-      "error",
-      function () {
-        console.log("css asset loaded error: ", css);
-        return resolve(false);
-      },
-      false
-    );
-    element.addEventListener(
-      "load",
-      function () {
-        return resolve(true);
-      },
-      false
-    );
-
     // 找出body内部含有module属性的link标签，然后追加到最后一个link后面，如果没有则追加到body的第一个子元素前面
     const bodyLinks = Array.from(
       document.body.getElementsByTagName("link")
     ).filter((i) => i && i.getAttribute("module"));
-    if (bodyLinks.length > 0) {
+
+    const existElement = bodyLinks.find((i) => i.getAttribute("href") === css);
+    // 若已存在外部模块的样式文件，则只需要变更link标签位置即可
+    if (existElement) {
       if (bodyLinks[bodyLinks.length - 1].nextSibling) {
         document.body.insertBefore(
-          element,
+          existElement,
           bodyLinks[bodyLinks.length - 1].nextSibling
         );
       } else {
-        document.body.appendChild(element);
+        document.body.appendChild(existElement);
       }
+      resolve(true);
     } else {
-      if (document.body.firstChild) {
-        document.body.insertBefore(element, document.body.firstChild);
+      const element = document.createElement("link");
+      element.setAttribute("module", name);
+      element.rel = "stylesheet";
+      element.href = css;
+      element.addEventListener(
+        "error",
+        function () {
+          console.log("css asset loaded error: ", css);
+          return resolve(false);
+        },
+        false
+      );
+      element.addEventListener(
+        "load",
+        function () {
+          return resolve(true);
+        },
+        false
+      );
+
+      if (bodyLinks.length > 0) {
+        if (bodyLinks[bodyLinks.length - 1].nextSibling) {
+          document.body.insertBefore(
+            element,
+            bodyLinks[bodyLinks.length - 1].nextSibling
+          );
+        } else {
+          document.body.appendChild(element);
+        }
       } else {
-        document.body.appendChild(element);
+        if (document.body.firstChild) {
+          document.body.insertBefore(element, document.body.firstChild);
+        } else {
+          document.body.appendChild(element);
+        }
       }
     }
   });
