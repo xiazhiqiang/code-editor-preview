@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Spin } from "antd";
-// @ts-ignore
 import * as babelParser from "@babel/parser";
 import babelTraverse from "@babel/traverse";
 import { transform as babelTransform } from "@babel/standalone";
-import {
-  loadModFromCdn,
-  runCode,
-  cleanModuleCss,
-  cleanModuleStyle,
-} from "./mod";
+import { loadModFromCdn, runCode, cleanModuleStyle } from "./mod";
 import ErrorBoundary from "./errorBoundary";
 import "./index.less";
 
@@ -60,26 +54,27 @@ export default (props: IProps) => {
   }, []);
 
   useEffect(() => {
+    // 入口jsx文件为空
+    if (
+      !codes ||
+      codes.length < 1 ||
+      !codes.find((i) => i && i.isEntry && i.value)
+    ) {
+      return;
+    }
+
     (async () => {
       setLoading(true);
 
       // 入口jsx文件为空
-      if (
-        !codes ||
-        codes.length < 1 ||
-        !codes.find((i) => i && i.isEntry && i.value)
-      ) {
-        setComp("");
-      } else {
-        const jsx: ICode = codes.find((i) => i && i.isEntry) || {};
-        const innerCssList: ICode[] = codes.filter((i) => i && i.isCss) || [];
-        try {
-          const ret: any = await runJsxCode(jsx.value as string, innerCssList);
-          setComp(ret && ret.default ? <ret.default /> : null);
-          setError(null);
-        } catch (err) {
-          setError(err);
-        }
+      const jsx: ICode = codes.find((i) => i && i.isEntry) || {};
+      const innerCssList: ICode[] = codes.filter((i) => i && i.isCss) || [];
+      try {
+        const ret: any = await runJsxCode(jsx.value as string, innerCssList);
+        setComp(ret && ret.default ? <ret.default /> : null);
+        setError(null);
+      } catch (err) {
+        setError(err);
       }
 
       setLoading(false);
@@ -104,8 +99,6 @@ export default (props: IProps) => {
       },
     });
 
-    // 清除模块link标签
-    cleanModuleCss();
     // 清除模块style标签
     cleanModuleStyle();
 
@@ -125,17 +118,15 @@ export default (props: IProps) => {
   };
 
   return (
-    <div className="sandbox-container">
-      <Spin
-        size="large"
-        tip="Loading..."
-        spinning={loading}
-        className="sandbox-loading"
-      >
-        <ErrorBoundary error={error} onError={setError}>
-          {Comp}
-        </ErrorBoundary>
-      </Spin>
-    </div>
+    <Spin
+      size="large"
+      tip="Loading..."
+      spinning={loading}
+      className="sandbox-loading"
+    >
+      <ErrorBoundary error={error} onError={setError}>
+        {Comp}
+      </ErrorBoundary>
+    </Spin>
   );
 };

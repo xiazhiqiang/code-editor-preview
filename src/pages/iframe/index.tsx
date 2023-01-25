@@ -27,9 +27,5 @@ export default () => {
     };
   }, [messageHandle]);
 
-  return (
-    <div className="container">
-      <Sandbox codes={codes} />
-    </div>
-  );
+  return <Sandbox codes={codes} />;
 };

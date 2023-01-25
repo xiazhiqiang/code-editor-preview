@@ -1,7 +1,8 @@
 .editor-container {
   position: relative;
   width: 100%;
-  height: calc(100% - 32px);
+  height: calc(100% - 40px);
+  background: #000;
 }
 
 .loading {
@@ -10,30 +11,56 @@
   top: 50%;
   z-index: 2;
   margin-left: -45px;
-  margin-top: -20px;
+  margin-top: -12px;
   width: 90px;
-  // font-size: 20px;
+  height: 40px;
   color: #fff;
+  .ant-spin-dot-item {
+    background: #fff;
+  }
 }
 
-.file-tag {
-  margin-right: 0;
-  padding: 6px 30px;
+@defaultTabColor: rgb(34, 37, 42);
+.file-tabs {
+  position: relative;
+  background: @defaultTabColor;
+}
+.file-tab {
+  margin: 0;
+  padding: 10px 30px;
   color: rgb(125, 126, 132) !important;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   border-radius: 0;
-  border-left-width: 1px;
-  border-right-width: 1px;
   border-style: solid;
-  border-color: none;
+  border-width: 0 !important;
+  border-top-width: 1px !important;
+  border-right-width: 1px !important;
+  border-color: #111 !important;
+  border-top-color: @defaultTabColor !important;
+  background: @defaultTabColor;
 
   &--focus {
     color: #fff !important;
-    border-left-color: rgb(29, 31, 36) !important;
-    border-right-color: rgb(29, 31, 36) !important;
+    // border-left-color: rgb(29, 31, 36) !important;
+    border-top-color: rgb(93, 140, 246) !important;
+    background: rgb(41, 44, 51);
   }
   &--modify {
     color: rgb(219, 191, 146) !important;
+  }
+}
+
+.editor-actions {
+  position: absolute;
+  right: 14px;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  line-height: 40px;
+  color: #fff;
+
+  .anticon {
+    margin-right: 8px;
   }
 }
