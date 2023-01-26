@@ -1,9 +1,17 @@
-import { cdnPrefix } from "@/constants";
-import { transform as babelTransform } from "@babel/standalone";
-import less from "less";
 import React from "react";
 import ReactDOM from "react-dom";
+import less from "less";
+// // @ts-ignore
+// import Sass from "sass.js/dist/sass";
+// @ts-ignore
+import Sass from "sass.js/dist/sass.sync";
+import { cdnPrefix } from "@/constants";
+import { transform as babelTransform } from "@babel/standalone";
 import { ICode } from "./index";
+
+// // 通过worker方式进行实时编译sass，提高性能
+// const sass = new Sass("/public/sass.worker.js");
+const sass = Sass;
 
 // 依赖库
 import dayjs from "dayjs";
@@ -47,7 +55,7 @@ export const loadModFromCdn = async (
   innerCssList: ICode[] = []
 ) => {
   // 加载内置的样式，如/index.css路径
-  if (/^\/.+\.(css|less)$/.test(nameAndVersion)) {
+  if (/^\/.+\.(css|less|scss|sass)$/.test(nameAndVersion)) {
     const { path, value }: any =
       innerCssList.find((i: any) => i && i.path === nameAndVersion) || {};
     await insertModuleStyle(path, value);
@@ -213,12 +221,32 @@ export const cleanModuleCss = () => {
 // 添加模块内置的css style标签样式，为了保证扩展的样式优先级高于业务动态样式（在head中），所以插入扩展样式在body内头部或body中已存在的模块link标签之后
 export const insertModuleStyle = async (name: string, styleContent: string) => {
   let content = styleContent || "";
+
+  // less 编译
   if (/less$/.test(name)) {
     try {
       const ret = (await less.render(content, { compress: true })) || {};
       content = ret.css || "";
     } catch (err) {
       console.log("less style error: ", err);
+      content = "";
+    }
+  }
+
+  // sass 编译
+  if (/s(c|a)ss$/.test(name)) {
+    try {
+      content = await new Promise((resolve, reject) => {
+        sass.compile(content, { style: Sass.style.nested }, (result: any) => {
+          if (result.status === 0) {
+            resolve(result.text);
+          } else {
+            reject(result.formatted || result.message);
+          }
+        });
+      });
+    } catch (err) {
+      console.log("sass style error: ", err);
       content = "";
     }
   }

@@ -2,6 +2,7 @@ export const cdnPrefix = "https://unpkg.com"; // https://cdn.jsdelivr.net/npm, h
 export const editorSaveJsxKey = "editor.code.jsx";
 export const editorSaveCssKey = "editor.code.css";
 export const editorSaveLessKey = "editor.code.less";
+export const editorSaveScssKey = "editor.code.scss";
 
 // 默认组件jsx入口代码
 export const defaultCompJsx = `import React, { useState } from 'react';
@@ -44,5 +45,13 @@ export const defaultCompLess = `@w: 20px;
   padding: @w;
   width: 110vw;
   height: 110vh;
+}
+`;
+
+// 默认组件内置sass
+export const defaultCompScss = `$w: 20px;
+
+.wrapper {
+  padding: 0 $w;
 }
 `;
