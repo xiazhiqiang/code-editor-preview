@@ -24,7 +24,7 @@ npm start
 
 ### 0.2.3
 
-> 在 0.2.3 基础上
+> 在 0.2.2 基础上
 
 - 新增 sass 样式编码及解析
 
@@ -63,6 +63,6 @@ npm start
 - 通过 less 实现对 less 样式实时编译解析为 css；
 - 通过 sass.js 实现对 sass/scss 样式实时编译解析为 css；
 - 右侧实现预览部分通过 iframe 构造渲染沙箱环境，其中 new Function 执行 jsx 代码；
-- 左侧编辑器利用 monaco editor 实现代码编辑和保存到 localStorage，其中构造不同的 model 实现 jsx 和 css 的编辑器切换；
-- 通过 postmessage 方式实现左侧保存代码后，将保存到 localStorage 代码 sendMessage 到右侧 iframe 页面触发更新渲染；
-- 动态加载的包样式和 index.css 样式，分别用 link 标签和 style 标签嵌入到 iframe 页面中的 body 内顶部，且模块 link 标签始终在 style 标签之前；
+- 左侧编辑器利用 monaco editor 实现代码编辑和保存到 localStorage，其中构造不同的 model 实现 jsx/tsx/less/scss/css 的编辑器切换；
+- 通过 postmessage 方式实现左侧保存代码后，sendMessage 到右侧 iframe 触发代码运行渲染；
+- 动态加载的包样式和 /index.css 样式，分别用 link 标签和 style 标签嵌入到 iframe 页面中的 body 内顶部，且模块 link 标签始终在 style 标签之前；
