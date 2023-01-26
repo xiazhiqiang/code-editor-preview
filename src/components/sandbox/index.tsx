@@ -11,7 +11,6 @@ export interface ICode {
   path?: string;
   value?: string;
   storeKey?: string;
-  isCss?: boolean;
   isEntry?: boolean;
 }
 
@@ -68,7 +67,9 @@ export default (props: IProps) => {
 
       // 入口jsx文件为空
       const jsx: ICode = codes.find((i) => i && i.isEntry) || {};
-      const innerCssList: ICode[] = codes.filter((i) => i && i.isCss) || [];
+      const innerCssList: ICode[] =
+        codes.filter((i: any) => i && /\.(css|less|sass|scss)$/.test(i.path)) ||
+        [];
       try {
         const ret: any = await runJsxCode(jsx.value as string, innerCssList);
         setComp(ret && ret.default ? <ret.default /> : null);
@@ -108,7 +109,8 @@ export default (props: IProps) => {
 
     // 源码解析
     let esCode = babelTransform(code, {
-      presets: ["env", "es2015", "react"],
+      presets: ["env", "es2015", "react", "typescript"],
+      filename: "index.js",
     }).code as string;
 
     // 在线执行模块

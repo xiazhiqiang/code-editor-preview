@@ -14,9 +14,11 @@ import {
   defaultCompCss,
   defaultCompJsx,
   defaultCompLess,
+  defaultCompScss,
   editorSaveCssKey,
   editorSaveJsxKey,
   editorSaveLessKey,
+  editorSaveScssKey,
 } from "@/constants/index";
 import "./index.less";
 
@@ -47,15 +49,45 @@ const files = [
     path: "/index.css",
     storeKey: editorSaveCssKey,
     value: defaultCompCss,
-    isCss: true,
   },
   {
     path: "/index2.less",
     storeKey: editorSaveLessKey,
     value: defaultCompLess,
-    isCss: true,
+  },
+  {
+    path: "/index3.scss",
+    storeKey: editorSaveScssKey,
+    value: defaultCompScss,
   },
 ];
+
+const getFileOptionsByPath = (path: string = "") => {
+  let language = "javascript";
+  let key = editorSaveJsxKey;
+
+  if (/jsx?$/.test(path)) {
+    language = "typescript";
+    key = editorSaveJsxKey;
+  }
+  if (/css$/.test(path)) {
+    language = "css";
+    key = editorSaveCssKey;
+  }
+  if (/less$/.test(path)) {
+    language = "less";
+    key = editorSaveLessKey;
+  }
+  if (/s(a|c)ss$/.test(path)) {
+    language = "scss";
+    key = editorSaveScssKey;
+  }
+
+  return {
+    language,
+    storeKey: key,
+  };
+};
 
 const getCodes = () => {
   return files.map((file: any) => {
@@ -72,21 +104,6 @@ const getCodes = () => {
       value,
     };
   });
-};
-
-const getFileLanguage = (path: string = "") => {
-  let language = "javascript";
-  if (/jsx?$/.test(path)) {
-    language = "javascript";
-  }
-  if (/css$/.test(path)) {
-    language = "css";
-  }
-  if (/less$/.test(path)) {
-    language = "less";
-  }
-
-  return language;
 };
 
 export default (props: any) => {
@@ -148,7 +165,7 @@ export default (props: any) => {
 
         // 初始化editor models
         files.forEach((file: any) => {
-          const language = getFileLanguage(file.path);
+          const { language } = getFileOptionsByPath(file.path);
           monaco.editor.createModel(
             file.value,
             language,
@@ -223,21 +240,8 @@ export default (props: any) => {
   };
 
   const saveFile = ({ v = "", path = "" }) => {
-    const language = getFileLanguage(path);
-    let key = editorSaveJsxKey;
-    switch (language) {
-      case "css":
-        key = editorSaveCssKey;
-        break;
-      case "less":
-        key = editorSaveLessKey;
-        break;
-      case "javascript":
-        key = editorSaveJsxKey;
-        break;
-    }
-
-    storage.local.set(key, v, true);
+    const { storeKey } = getFileOptionsByPath(path);
+    storage.local.set(storeKey, v, true);
 
     // 清空修改状态
     modifyFile({ path, state: false });
@@ -288,40 +292,48 @@ export default (props: any) => {
         size="large"
       />
       {editor ? (
-        <div className="file-tabs">
-          {files.map((file: any = {}, idx: number) => {
-            return (
-              <Tag
-                key={`fileTabItem_${idx}`}
-                // color={
-                //   filePath === file.path ? "rgb(41,44,51)" : "rgb(34,37,42)"
-                // }
-                className={`file-tab ${
-                  filePath === file.path ? "file-tab--focus" : ""
-                } ${
-                  filesModifyStateRef.current[file.path]
-                    ? "file-tab--modify"
-                    : ""
-                }`}
-                onClick={() => switchFile({ path: file.path })}
-              >
-                {filesModifyStateRef.current[file.path] ? "* " : ""}
-                {file.path.slice(1)}
-              </Tag>
-            );
-          })}
-          <div className="editor-actions">
-            {displaySandbox ? (
-              <RightSquareOutlined onClick={toggleDisplaySandbox} />
-            ) : (
-              <LeftSquareOutlined onClick={toggleDisplaySandbox} />
-            )}
-            {fullScreenPreview ? (
-              <FullscreenExitOutlined onClick={toggleFullScreenPreview} />
-            ) : (
-              <FullscreenOutlined onClick={toggleFullScreenPreview} />
-            )}
+        <div className="editor-top">
+          <div
+            className="file-tabs"
+            style={{ width: `${files.length * 130}px` }}
+          >
+            {files.map((file: any = {}, idx: number) => {
+              return (
+                <Tag
+                  key={`fileTabItem_${idx}`}
+                  // color={
+                  //   filePath === file.path ? "rgb(41,44,51)" : "rgb(34,37,42)"
+                  // }
+                  className={`file-tab ${
+                    filePath === file.path ? "file-tab--focus" : ""
+                  } ${
+                    filesModifyStateRef.current[file.path]
+                      ? "file-tab--modify"
+                      : ""
+                  }`}
+                  onClick={() => switchFile({ path: file.path })}
+                >
+                  {filesModifyStateRef.current[file.path] ? "* " : ""}
+                  {file.path.slice(1)}
+                </Tag>
+              );
+            })}
           </div>
+        </div>
+      ) : null}
+
+      {editor ? (
+        <div className="editor-actions">
+          {displaySandbox ? (
+            <RightSquareOutlined onClick={toggleDisplaySandbox} />
+          ) : (
+            <LeftSquareOutlined onClick={toggleDisplaySandbox} />
+          )}
+          {fullScreenPreview ? (
+            <FullscreenExitOutlined onClick={toggleFullScreenPreview} />
+          ) : (
+            <FullscreenOutlined onClick={toggleFullScreenPreview} />
+          )}
         </div>
       ) : null}
 
