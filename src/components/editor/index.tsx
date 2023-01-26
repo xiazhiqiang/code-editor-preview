@@ -13,12 +13,15 @@ import {
   cdnPrefix,
   defaultCompCss,
   defaultCompJsx,
+  defaultCompTsx,
   defaultCompLess,
   defaultCompScss,
   editorSaveCssKey,
   editorSaveJsxKey,
+  editorSaveTsxKey,
   editorSaveLessKey,
   editorSaveScssKey,
+  editorTsCompilerOptions,
 } from "@/constants/index";
 import "./index.less";
 
@@ -39,10 +42,16 @@ let editorStatus: any = {};
 
 // 默认组件文件
 const files = [
+  // {
+  //   path: "/index.jsx",
+  //   storeKey: editorSaveJsxKey,
+  //   value: defaultCompJsx,
+  //   isEntry: true,
+  // },
   {
-    path: "/index.jsx",
-    storeKey: editorSaveJsxKey,
-    value: defaultCompJsx,
+    path: "/index.tsx",
+    storeKey: editorSaveTsxKey,
+    value: defaultCompTsx,
     isEntry: true,
   },
   {
@@ -64,34 +73,36 @@ const files = [
 
 const getFileOptionsByPath = (path: string = "") => {
   let language = "javascript";
-  let key = editorSaveJsxKey;
+  let storeKey = editorSaveJsxKey;
 
   if (/jsx?$/.test(path)) {
+    language = "javascript";
+    storeKey = editorSaveJsxKey;
+  }
+  if (/tsx?$/.test(path)) {
     language = "typescript";
-    key = editorSaveJsxKey;
+    storeKey = editorSaveTsxKey;
   }
   if (/css$/.test(path)) {
     language = "css";
-    key = editorSaveCssKey;
+    storeKey = editorSaveCssKey;
   }
   if (/less$/.test(path)) {
     language = "less";
-    key = editorSaveLessKey;
+    storeKey = editorSaveLessKey;
   }
   if (/s(a|c)ss$/.test(path)) {
     language = "scss";
-    key = editorSaveScssKey;
+    storeKey = editorSaveScssKey;
   }
 
-  return {
-    language,
-    storeKey: key,
-  };
+  return { language, storeKey };
 };
 
 const getCodes = () => {
   return files.map((file: any) => {
-    let { value = "", isEntry, storeKey } = file || {};
+    let { value = "", isEntry, storeKey, path } = file || {};
+    const fileOptions = getFileOptionsByPath(path);
 
     // 从localStorage中取值，如果没有则展示默认的组件代码
     value = storage.local.get(storeKey) || value || "";
@@ -101,6 +112,7 @@ const getCodes = () => {
 
     return {
       ...file,
+      ...fileOptions,
       value,
     };
   });
@@ -137,6 +149,36 @@ export default (props: any) => {
     [filesModifyState]
   );
 
+  const transformEntryCode = async ({ editor, monaco }: any = {}) => {
+    const codes = getCodes();
+    const idx = codes.findIndex((i) => i && i.isEntry && i.value);
+
+    // 将入口tsx文件转换为jsx
+    if (idx >= 0 && monaco && editor && codes[idx].language === "typescript") {
+      try {
+        const { path } = codes[idx];
+
+        // monaco-editor 提供了 Worker 编译代码 TypeScript 能力
+        const model = monaco.editor
+          .getModels()
+          .find((model: any) => model && model.uri.path === path);
+        if (model) {
+          const uri = model.uri;
+          const tsWorker =
+            await monaco.languages.typescript.getTypeScriptWorker();
+          const client = await tsWorker(uri);
+          const result = await client.getEmitOutput(uri.toString());
+          const files = result.outputFiles[0];
+          codes[idx].value = files.text;
+        }
+      } catch (err) {
+        console.log("editor typescript transform error: ", err);
+      }
+    }
+
+    return Promise.resolve(codes);
+  };
+
   const files: any = getCodes();
 
   useEffect(() => {
@@ -159,6 +201,16 @@ export default (props: any) => {
         setMonaco(monaco);
         setEditor(editor);
 
+        // https://github.com/microsoft/monaco-editor/issues/264
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: true,
+          noSyntaxValidation: true, // This line disables errors in jsx tags like <div>, etc.
+        });
+        const tsOptions = editorTsCompilerOptions(monaco);
+        monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
+          tsOptions
+        );
+
         editor.onDidChangeModelContent(() => {
           modifyFile({ path: filePathRef.current, state: true });
         });
@@ -170,6 +222,7 @@ export default (props: any) => {
             file.value,
             language,
             new monaco.Uri().with({ path: file.path })
+            // monaco.Uri.file(file.path)
           );
         });
 
@@ -180,7 +233,10 @@ export default (props: any) => {
         openFile({ editor, monaco, path: entryFilePath });
 
         // 初始触发更新
-        onCodesSave(getCodes());
+        (async () => {
+          const codes = await transformEntryCode({ editor, monaco });
+          onCodesSave(codes);
+        })();
       })
       .catch((err) => {
         console.log("load editor error", err);
@@ -195,6 +251,8 @@ export default (props: any) => {
     if (!editor || !monaco || !filePath) {
       return;
     }
+
+    let timer: any = null;
 
     // cmd + s 保存
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -212,11 +270,15 @@ export default (props: any) => {
       });
 
       // 增加延迟防止在onDidChangeModelContent事件之前执行保存
-      setTimeout(() => {
+      timer = setTimeout(() => {
         const v = editor.getValue();
         saveFile({ v, path: filePath });
       }, 100);
     });
+
+    return () => {
+      timer && clearTimeout(timer);
+    };
   }, [editor, monaco, filePath]);
 
   // 监听编辑器resize变化，更新编辑器layout
@@ -239,7 +301,7 @@ export default (props: any) => {
     setFilesModifyState(newFilesModifyState);
   };
 
-  const saveFile = ({ v = "", path = "" }) => {
+  const saveFile = ({ v = "", path = "" }: any) => {
     const { storeKey } = getFileOptionsByPath(path);
     storage.local.set(storeKey, v, true);
 
@@ -247,8 +309,10 @@ export default (props: any) => {
     modifyFile({ path, state: false });
 
     // 获取所有文件最新的值，传递给外部
-    const codes = getCodes();
-    onCodesSave(codes);
+    (async () => {
+      const codes = await transformEntryCode({ editor, monaco });
+      onCodesSave(codes);
+    })();
   };
 
   const openFile = ({ editor = null, monaco = null, path = "" }: any) => {

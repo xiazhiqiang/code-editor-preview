@@ -66,12 +66,15 @@ export default (props: IProps) => {
       setLoading(true);
 
       // 入口jsx文件为空
-      const jsx: ICode = codes.find((i) => i && i.isEntry) || {};
+      const entryFile: ICode = codes.find((i) => i && i.isEntry) || {};
       const innerCssList: ICode[] =
         codes.filter((i: any) => i && /\.(css|less|sass|scss)$/.test(i.path)) ||
         [];
       try {
-        const ret: any = await runJsxCode(jsx.value as string, innerCssList);
+        const ret: any = await runEntryCode(
+          entryFile.value as string,
+          innerCssList
+        );
         setComp(ret && ret.default ? <ret.default /> : null);
         setError(null);
       } catch (err) {
@@ -82,12 +85,12 @@ export default (props: IProps) => {
     })();
   }, [codes]);
 
-  // 执行jsx代码
-  const runJsxCode = async (code: string, innerCssList: ICode[] = []) => {
+  // 执行代码
+  const runEntryCode = async (code: string, innerCssList: ICode[] = []) => {
     // ast 解析源码
     const ast = babelParser.parse(code, {
       sourceType: "module",
-      plugins: ["jsx"],
+      plugins: ["jsx", "typescript"],
     });
 
     // 提取源码中依赖的模块
