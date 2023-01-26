@@ -4,9 +4,29 @@
 
 <img src="./code-editor-preview_0.2.x.gif" width="100%" height="auto" alt="预览图" />
 
+## 使用
+
+```shell
+git clone https://github.com/xiazhiqiang/code-editor-preview.git
+npm i
+npm start
+```
+
 本地启动：`http://127.0.0.1:8000/#/code`
 
 ## 版本功能
+
+### 0.2.4
+
+> 在 0.2.3 基础上
+
+- 新增 TypeScript 解析（通过 Editor tsWorker 进行解析）
+
+### 0.2.3
+
+> 在 0.2.3 基础上
+
+- 新增 sass 样式编码及解析
 
 ### 0.2.2
 
@@ -38,7 +58,10 @@
 
 ## 实现原理
 
+- 通过 monaco editor tsWorker 实现 tsx 代码解析为 jsx；
 - 通过 babel 解析组件 jsx 代码并提取依赖，动态加载对应的 cdn umd 资源；
+- 通过 less 实现对 less 样式实时编译解析为 css；
+- 通过 sass.js 实现对 sass/scss 样式实时编译解析为 css；
 - 右侧实现预览部分通过 iframe 构造渲染沙箱环境，其中 new Function 执行 jsx 代码；
 - 左侧编辑器利用 monaco editor 实现代码编辑和保存到 localStorage，其中构造不同的 model 实现 jsx 和 css 的编辑器切换；
 - 通过 postmessage 方式实现左侧保存代码后，将保存到 localStorage 代码 sendMessage 到右侧 iframe 页面触发更新渲染；
