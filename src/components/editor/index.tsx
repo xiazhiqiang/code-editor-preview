@@ -201,11 +201,11 @@ export default (props: any) => {
         setMonaco(monaco);
         setEditor(editor);
 
-        // https://github.com/microsoft/monaco-editor/issues/264
-        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-          noSemanticValidation: true,
-          noSyntaxValidation: true, // This line disables errors in jsx tags like <div>, etc.
-        });
+        // // https://github.com/microsoft/monaco-editor/issues/264
+        // monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+        //   noSemanticValidation: true,
+        //   noSyntaxValidation: true, // This line disables errors in jsx tags like <div>, etc.
+        // });
         const tsOptions = editorTsCompilerOptions(monaco);
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
           tsOptions
