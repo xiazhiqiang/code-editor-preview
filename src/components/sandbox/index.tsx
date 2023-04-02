@@ -3,7 +3,14 @@ import { Spin } from "antd";
 import * as babelParser from "@babel/parser";
 import babelTraverse from "@babel/traverse";
 import { transform as babelTransform } from "@babel/standalone";
-import { loadModFromCdn, runCode, cleanModuleStyle } from "./mod";
+import { cdnPrefix } from "@/constants/index";
+import {
+  loadModFromCdn,
+  runCode,
+  cleanModuleStyle,
+  insertModuleCss,
+  insertModuleStyle,
+} from "./mod";
 import ErrorBoundary from "./errorBoundary";
 import "./index.less";
 
@@ -107,7 +114,20 @@ export default (props: IProps) => {
     cleanModuleStyle();
 
     for (let i = 0, len = codeDeps.length; i < len; i++) {
-      await loadModFromCdn(codeDeps[i], depsVersion, innerCssList);
+      const nameAndVersion = codeDeps[i];
+
+      // 加载内置的样式，如/index.css路径
+      if (/^\.\/.+\.(css|less|scss|sass)$/.test(nameAndVersion)) {
+        const { path, value }: any =
+          innerCssList.find((i: any) => i && `.${i.path}` === nameAndVersion) ||
+          {};
+        await insertModuleStyle(path, value);
+      } else if (/\.css$/.test(nameAndVersion)) {
+        // import其他库的css文件，如antd/dist/antd.css
+        await insertModuleCss(nameAndVersion, `${cdnPrefix}/${nameAndVersion}`);
+      } else {
+        await loadModFromCdn(nameAndVersion, depsVersion);
+      }
     }
 
     // 源码解析

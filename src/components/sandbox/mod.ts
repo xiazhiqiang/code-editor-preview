@@ -7,7 +7,6 @@ import less from "less";
 import Sass from "sass.js/dist/sass.sync";
 import { cdnPrefix } from "@/constants";
 import { transform as babelTransform } from "@babel/standalone";
-import { ICode } from "./index";
 
 // // 通过worker方式进行实时编译sass，提高性能
 // const sass = new Sass("/public/sass.worker.js");
@@ -51,22 +50,8 @@ export function runCode(code: string) {
 // 从cdn动态加载模块并缓存
 export const loadModFromCdn = async (
   nameAndVersion: string,
-  depsVersion: any[] = [],
-  innerCssList: ICode[] = []
+  depsVersion: any[] = []
 ) => {
-  // 加载内置的样式，如/index.css路径
-  if (/^\/.+\.(css|less|scss|sass)$/.test(nameAndVersion)) {
-    const { path, value }: any =
-      innerCssList.find((i: any) => i && i.path === nameAndVersion) || {};
-    await insertModuleStyle(path, value);
-    return;
-  }
-  // import其他库的css文件，如antd/dist/antd.css
-  if (/\.css$/.test(nameAndVersion)) {
-    await insertModuleCss(nameAndVersion, `${cdnPrefix}/${nameAndVersion}`);
-    return;
-  }
-
   if (moduleDeps[nameAndVersion]) {
     // console.log("mod cached: ", moduleDeps[nameAndVersion]);
     return moduleDeps[nameAndVersion];

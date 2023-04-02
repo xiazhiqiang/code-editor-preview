@@ -29,9 +29,9 @@ import lodash from 'lodash';
 import dayjs from 'dayjs';
 import { Button } from 'antd';
 import "antd@4.24.7/dist/antd.css";
-import '/index.css';
-import '/index2.less';
-import '/index3.scss';
+import './index.css';
+import './index2.less';
+import './index3.scss';
 
 export default (props) => {
   const [count, setCount] = useState(0);
@@ -58,9 +58,9 @@ import lodash from 'lodash';
 import dayjs from 'dayjs';
 import { Button } from 'antd';
 import "antd@4.24.7/dist/antd.css";
-import '/index.css';
-import '/index2.less';
-import '/index3.scss';
+import './index.css';
+import './index2.less';
+import './index3.scss';
 
 interface IProps {
   value?: any;
