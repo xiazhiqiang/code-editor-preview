@@ -87,6 +87,10 @@ export default (props: IProps) => {
 
   // 执行代码
   const runEntryCode = async (code: string, innerCssList: ICode[] = []) => {
+    if (!code) {
+      return null;
+    }
+
     // ast 解析源码
     const ast = babelParser.parse(code, {
       sourceType: "module",

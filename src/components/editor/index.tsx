@@ -252,33 +252,30 @@ export default (props: any) => {
       return;
     }
 
-    let timer: any = null;
-
     // cmd + s 保存
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       // 保存之前格式化代码，会触发onDidChangeModelContent事件
       editor.getAction("editor.action.formatDocument").run();
 
-      // 保存代码到localStorage
-      message.destroy("editorSave");
-      message.success({
-        content: `${filePath.slice(1)}已保存`,
-        key: "editorSave",
-        style: {
-          marginTop: "30vh",
-        },
-      });
+      editor
+        .getAction("editor.action.formatDocument")
+        .run()
+        .catch()
+        .finally(() => {
+          // 保存代码到localStorage
+          message.destroy("editorSave");
+          message.success({
+            content: `${filePath.slice(1)}已保存`,
+            key: "editorSave",
+            style: {
+              marginTop: "30vh",
+            },
+          });
 
-      // 增加延迟防止在onDidChangeModelContent事件之前执行保存
-      timer = setTimeout(() => {
-        const v = editor.getValue();
-        saveFile({ v, path: filePath });
-      }, 100);
+          const v = editor.getValue();
+          saveFile({ v, path: filePath });
+        });
     });
-
-    return () => {
-      timer && clearTimeout(timer);
-    };
   }, [editor, monaco, filePath]);
 
   // 监听编辑器resize变化，更新编辑器layout
