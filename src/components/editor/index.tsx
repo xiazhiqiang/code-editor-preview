@@ -42,18 +42,18 @@ let editorStatus: any = {};
 
 // 默认组件文件
 const files = [
-  // {
-  //   path: "/index.jsx",
-  //   storeKey: editorSaveJsxKey,
-  //   value: defaultCompJsx,
-  //   isEntry: true,
-  // },
   {
-    path: "/index.tsx",
-    storeKey: editorSaveTsxKey,
-    value: defaultCompTsx,
+    path: "/index.jsx",
+    storeKey: editorSaveJsxKey,
+    value: defaultCompJsx,
     isEntry: true,
   },
+  // {
+  //   path: "/index.tsx",
+  //   storeKey: editorSaveTsxKey,
+  //   value: defaultCompTsx,
+  //   isEntry: true,
+  // },
   {
     path: "/index.css",
     storeKey: editorSaveCssKey,
@@ -184,7 +184,7 @@ export default (props: any) => {
   useEffect(() => {
     loader
       .init()
-      .then((monaco) => {
+      .then((monaco: any) => {
         const editor = monaco.editor.create(editorContainerRef.current, {
           // value,
           language,
@@ -238,7 +238,7 @@ export default (props: any) => {
           onCodesSave(codes);
         })();
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.log("load editor error", err);
       });
 
