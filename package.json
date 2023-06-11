@@ -14,7 +14,7 @@
     "@babel/runtime": "^7.20.1",
     "@babel/standalone": "^7.20.4",
     "@babel/traverse": "^7.20.10",
-    "@monaco-editor/react": "^4.4.6",
+    "@monaco-editor/react": "4.4.6",
     "antd": "^5.0.1",
     "dayjs": "^1.11.6",
     "less": "^4.1.3",
